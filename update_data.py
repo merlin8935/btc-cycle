@@ -245,9 +245,10 @@ def main():
     v = build(live, data, history)
     body = Template(TEMPLATE.read_text()).substitute(v)
     OUT.write_text(body)
-    # Pages 版：去掉 body 里的 <title> 和 claude 专用 meta，套完整文档壳
+    # Pages 版：去掉 body 里的 <title>、claude 专用 meta 和「打开实时版」入口，套完整文档壳
     pages_body = "\n".join(l for l in body.splitlines()
-                           if not l.startswith("<title>") and "claude:viewport-fit-sides" not in l)
+                           if not l.startswith("<title>") and "claude:viewport-fit-sides" not in l
+                           and 'class="livelink"' not in l)
     OUT_PAGES.parent.mkdir(exist_ok=True)
     OUT_PAGES.write_text(PAGES_HEAD + "\n" + pages_body + "\n" + PAGES_TAIL)
     HISTORY.write_text(json.dumps(history, ensure_ascii=False, indent=1))
