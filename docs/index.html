@@ -1,0 +1,362 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>BTC 周期定位</title><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style></head><body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 布局：手机单列卡片流，≥700px（Fold 内屏）两列；数字用等宽字体对齐 */
+:root{
+  --bg:#f3f1ec;
+  --card:#ffffff;
+  --fg:#1c1b18;
+  --muted:#6b675e;
+  --line:#dedad1;
+  --accent:#b8731c;
+  --good:#2f7d4f;
+  --warn:#b8731c;
+  --bad:#b4372f;
+  --good-bg:#e4f1e8;
+  --warn-bg:#f6e9d6;
+  --bad-bg:#f5e1df;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:-apple-system,"PingFang SC","Noto Sans SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#15161a;--card:#1f2127;--fg:#ecebe6;--muted:#9c998f;--line:#32353d;
+    --accent:#e0a04a;--good:#5fc285;--warn:#e0a04a;--bad:#e8706a;
+    --good-bg:#1d3327;--warn-bg:#3a2d18;--bad-bg:#3d2220;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15161a;--card:#1f2127;--fg:#ecebe6;--muted:#9c998f;--line:#32353d;
+  --accent:#e0a04a;--good:#5fc285;--warn:#e0a04a;--bad:#e8706a;
+  --good-bg:#1d3327;--warn-bg:#3a2d18;--bad-bg:#3d2220;color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.5;margin:0}
+.wrap{max-width:960px;margin:0 auto;padding-block:20px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{margin-bottom:14px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:26px;margin:2px 0 4px;line-height:1.2;text-wrap:balance}
+.asof{font-size:13px;color:var(--muted)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--line);margin-right:6px;vertical-align:middle}
+.dot.live{background:var(--good)}
+.dot.err{background:var(--bad)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+@media (min-width:700px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.span2{grid-column:1/-1}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.card h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:600}
+
+/* 结论卡 */
+.verdict{border-left:5px solid var(--accent)}
+.verdict .big{font-size:24px;font-weight:700;line-height:1.25;margin:0 0 6px}
+.verdict .sub{color:var(--muted);margin:0 0 12px}
+.price{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline}
+.price .p{font-size:30px;font-weight:600}
+.price .d{font-size:13px;color:var(--muted)}
+
+/* 周期时钟 */
+.clock{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin-top:4px}
+.ph{text-align:center;font-size:11px;line-height:1.25;color:var(--muted);min-width:0;overflow-wrap:anywhere}
+.ph .bar{height:8px;border-radius:4px;background:var(--line);margin-bottom:6px}
+.ph.done .bar{background:var(--good)}
+.ph.now .bar{background:var(--accent);box-shadow:0 0 0 3px var(--warn-bg)}
+.ph.now{color:var(--fg);font-weight:600}
+.clock-note{font-size:13px;color:var(--muted);margin-top:10px}
+
+/* 条件清单 */
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:10px;align-items:flex-start}
+.chip{flex:0 0 auto;min-width:44px;text-align:center;font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;margin-top:2px}
+.ok{background:var(--good-bg);color:var(--good)}
+.no{background:var(--bad-bg);color:var(--bad)}
+.half{background:var(--warn-bg);color:var(--warn)}
+.row b{display:block}
+.row small{color:var(--muted);display:block;font-size:13px}
+details{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}
+summary{cursor:pointer;color:var(--accent);font-size:14px;font-weight:600}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+details p{margin:8px 0 0;font-size:14px;color:var(--muted)}
+
+/* 数据格 */
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kv > div{border:1px solid var(--line);border-radius:10px;padding:10px;min-width:0}
+.kv .k{font-size:12px;color:var(--muted);margin-bottom:2px}
+.kv .v{font-size:18px;font-weight:600;line-height:1.2}
+.kv .s{font-size:12px;color:var(--muted);margin-top:2px}
+.t-good{color:var(--good)}.t-bad{color:var(--bad)}.t-warn{color:var(--warn)}
+
+/* 价位梯 */
+.ladder{list-style:none;margin:0;padding:0}
+.ladder li{display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);align-items:baseline}
+.ladder li:last-child{border-bottom:0}
+.ladder .lv{font-weight:600;font-size:16px}
+.ladder .tag{font-size:14px}
+.ladder .tag small{color:var(--muted);display:block;font-size:12px}
+.ladder li.now{background:var(--warn-bg);margin:0 -16px;padding-left:16px;padding-right:16px;border-radius:0}
+.ladder li.now .lv{color:var(--accent)}
+
+/* 情景 */
+.sc{display:flex;flex-direction:column;gap:10px}
+.sc div{min-width:0}
+.sc .head{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.sc .meter{height:7px;border-radius:4px;background:var(--line);overflow:hidden;margin:5px 0}
+.sc .meter i{display:block;height:100%;background:var(--accent)}
+.sc .meter.bad i{background:var(--bad)}
+.sc .meter.good i{background:var(--good)}
+.sc p{margin:0;font-size:14px;color:var(--muted)}
+
+/* 操作 */
+.act{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.act li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:baseline}
+.act .n{font-family:var(--mono);color:var(--accent);font-weight:600}
+
+/* 下一事件 */
+.event{display:flex;gap:12px;align-items:center}
+.event .date{font-size:22px;font-weight:700;color:var(--accent);white-space:nowrap}
+.event p{margin:0;font-size:14px;color:var(--muted)}
+
+footer{margin-top:16px;font-size:12px;color:var(--muted);line-height:1.6}
+footer a{color:var(--accent)}
+.score{font-size:13px;color:var(--muted);margin-left:6px;font-weight:400;text-transform:none;letter-spacing:0}
+@media (prefers-reduced-motion:no-preference){.ph.now .bar{animation:pulse 2s ease-in-out infinite}}
+@keyframes pulse{50%{box-shadow:0 0 0 6px var(--warn-bg)}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Bitcoin · 周期定位</div>
+  <h1>熊市第 12 个月，筑底期</h1>
+  <div class="asof"><span class="dot" id="dot"></span><span id="asof">快照 2026-10-27 16:12（吉隆坡）</span> · Bybit 永续 · 判断每日 08:38 复核</div>
+</header>
+
+<div class="grid">
+
+<section class="card verdict span2">
+  <p class="big">该跌的跌完大半，该涨的还没来。</p>
+  <p class="sub">底部区域大概率已在 57.8k 出现（2 月 / 6 月两次在 58–60k 止跌），但牛市启动条件还差两个：联储没转松、没有新买家。</p>
+  <div class="price">
+    <span class="p num" id="price">$79,853</span>
+    <span class="d">距高点 <b class="num t-bad" id="chg_ath">−37%</b>（<span id="ath_k">126.2k</span>，<span id="ath_ym">2025-10</span>）</span>
+    <span class="d">距低点 <b class="num t-good" id="chg_low">+38%</b>（<span id="low_k">57.8k</span>，<span id="low_ym">2026-06</span>）</span>
+  </div>
+</section>
+
+<section class="card span2">
+  <h2>周期时钟</h2>
+  <div class="clock">
+    <div class="ph done"><div class="bar"></div>①顶部<br>恐慌跌</div>
+    <div class="ph done"><div class="bar"></div>②杠杆<br>连环爆</div>
+    <div class="ph done"><div class="bar"></div>③极恐<br>双底</div>
+    <div class="ph now"><div class="bar"></div>④磨底<br>反复打</div>
+    <div class="ph "><div class="bar"></div>⑤联储<br>转向</div>
+    <div class="ph "><div class="bar"></div>⑥新买家<br>减半前</div>
+  </div>
+  <p class="clock-note">历史三轮熊市（2014 / 2018 / 2022）都在顶后 12–13 个月见底。现在第 12 个月。下次减半 2028-04，按模板 2027 下半年才进入起爆窗口。</p>
+</section>
+
+<section class="card">
+  <h2>牛市四条件 <span class="score">1 / 4</span></h2>
+  <ul class="list">
+    <li class="row"><span class="chip ok">满足</span><div><b>杠杆清干净</b><small>费率 +0.006%，Strategy 跌 75% 已卖币</small></div></li>
+    <li class="row"><span class="chip no">未满足</span><div><b>联储转松</b><small>3.75–4.00%，CPI ~4.1%，10-28 市场押维持，OIS 加息概率 9.6%（10-25），12-09 加息预期升温</small></div></li>
+    <li class="row"><span class="chip half">等待</span><div><b>减半窗口</b><small>2028-04，还有 18 个月</small></div></li>
+    <li class="row"><span class="chip no">未满足</span><div><b>新的边际买家</b><small>ETF 是上一轮渠道，流向反复摇摆</small></div></li>
+  </ul>
+  <details><summary>为什么这四条</summary>
+    <p>2013、2017、2021、2025 四轮牛市都同时具备：前一熊清完杠杆 → 联储从紧转松 → 减半供给窗口 → 一个以前没有的新买家（散户→ICO→机构→ETF）。没有一轮牛市是在加息周期里启动的。</p>
+  </details>
+</section>
+
+<section class="card">
+  <h2>转牛验证清单 <span class="score">0 / 5</span></h2>
+  <ul class="list">
+    <li class="row"><span class="chip no">✗</span><div><b>联储停止加息 → 首次降息</b><small>必要条件，没它一切免谈</small></div></li>
+    <li class="row"><span class="chip no">✗</span><div><b>ETF 连续 4 周净流入</b><small>且费率仍中性（现货驱动）</small></div></li>
+    <li class="row"><span class="chip no">✗</span><div><b>周线收盘站上 87.4k</b><small>60 日高点；自动判定</small></div></li>
+    <li class="row"><span class="chip half">快了</span><div><b>鲸鱼 1 年持仓变动翻正</b><small>从 −28.2 万改善到 −3.9 万 BTC（CryptoQuant 10-25）</small></div></li>
+    <li class="row"><span class="chip no">✗</span><div><b>出现新叙事 / 新渠道</b><small>主权储备？养老金？目前没看到</small></div></li>
+  </ul>
+  <p class="clock-note">满足 ① + ③ 即可确认熊转牛。</p>
+</section>
+
+<section class="card">
+  <h2>关键数据</h2>
+  <div class="kv">
+    <div><div class="k">资金费率</div><div class="v num" id="funding">+0.006%</div><div class="s t-good" id="funding_note">中性，杠杆已清</div></div>
+    <div><div class="k">多空比（Bybit）</div><div class="v num" id="ls_ratio">2.05</div><div class="s t-bad" id="ls_note">67% 散户做多，拥挤</div></div>
+    <div><div class="k">ETF 净流向 <span class="num">10-22～23</span></div><div class="v num t-bad">−$7.7 亿</div><div class="s">前三日曾 +$10.7 亿（Farside）</div></div>
+    <div><div class="k">联储利率</div><div class="v num">3.75–4.00%</div><div class="s t-bad">CPI ~4.1%，10-28 市场押维持，OIS 加息概率 9.6%（10-25），12-09 加息预期升温</div></div>
+    <div><div class="k">恐惧贪婪</div><div class="v num" id="fng">48</div><div class="s">6 月极度恐惧时曾 8–12</div></div>
+    <div><div class="k">鲸鱼持仓</div><div class="v num t-good">+6 万 BTC</div><div class="s">8 月底以来吸筹（CryptoQuant 10-25）</div></div>
+    <div><div class="k">OI（60 日）</div><div class="v num" id="oi60">+25%</div><div class="s t-warn" id="oi_note">价格横盘，仓位在堆</div></div>
+    <div><div class="k">本轮回撤</div><div class="v num" id="drawdown">−37%</div><div class="s t-warn">历史 −77%～−93%，<span id="dd_note">异常浅</span></div></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>关键价位</h2>
+  <ul class="ladder" id="ladder">
+    <li><span class="lv num">87.4k</span><span class="tag">60 日高点 <small>周线站上 = 趋势反转</small></span></li>
+    <li><span class="lv num">85.3k</span><span class="tag">次级阻力</span></li>
+    <li><span class="lv num">82.8k</span><span class="tag">30 日均线</span></li>
+    <li class="now"><span class="lv num">79.9k</span><span class="tag">现价 <small>箱体中轴，赔率最差</small></span></li>
+    <li><span class="lv num">79.2k</span><span class="tag">生死线 <small>30 日低点，破了别抄底</small></span></li>
+    <li><span class="lv num">73.0k</span><span class="tag">200 日均线</span></li>
+    <li><span class="lv num">59.9k</span><span class="tag">2 月低点 <small>与 6 月 57.8k 构成双底</small></span></li>
+    <li><span class="lv num">53–58k</span><span class="tag">第三腿目标 <small>Grayscale 58k / KuCoin 53–55k</small></span></li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>三个情景</h2>
+  <div class="sc">
+    <div><div class="head"><span>箱体筑底</span><span class="num">50%</span></div><div class="meter "><i style="width:50%"></i></div><p>10-28 维持不变、口风偏鹰但不加。79.2k 守住，70–90k 磨到 2027-Q1，6 月低点 57.8k 就是底。</p></div>
+    <div><div class="head"><span>第三腿下跌</span><span class="num">30%</span></div><div class="meter bad"><i style="width:30%"></i></div><p>10-28 或 12-09 意外加息、或 ETF 持续流出。破 79.2k → 73.0k → 再测 57.8k，可能到 53–56k 补足历史回撤。</p></div>
+    <div><div class="head"><span>提前转牛</span><span class="num">20%</span></div><div class="meter good"><i style="width:20%"></i></div><p>美伊缓和 → 油价跌 → CPI 回落 → 联储转向。直接站上 87.4k。</p></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>操作</h2>
+  <ul class="act">
+    <li><span class="n">1</span><span>不追多、不抄底。箱体中间赔率最差。</span></li>
+    <li><span class="n">2</span><span>现货周期仓：等 <b class="num">60–72k</b> 分批，不是现在。</span></li>
+    <li><span class="n">3</span><span>合约只做箱体边缘：<b class="num">79.2k</b> 附近多 / <b class="num">85k–87.4k</b> 附近空。</span></li>
+    <li><span class="n">4</span><span>10-28 议息当天空仓。即使维持不变，发布会口风也能打 ±5%，拥挤多头最容易被打。</span></li>
+    <li><span class="n">5</span><span>没出现「联储暂停 + 周线 >87.4k」前，所有反弹按熊市反弹处理。</span></li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>下一个转折点</h2>
+  <div class="event">
+    <div class="date num">10·28</div>
+    <p>FOMC 议息。市场押维持不变（OIS 加息概率 9.6%，10-25）。看点是声明和发布会对 12-09 的暗示：若放话还要加，走情景 2；若暗示暂停，情景 1 / 3 概率上升。</p>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <p><b>自动部分：</b>价格、高低点、回撤、费率、多空比、OI、恐贪、均线、价位梯（Bybit / alternative.me，每日拉取）。<b>手动部分：</b>ETF、联储、鲸鱼、判断与情景（由 Claude 每日复核，标注数据日期）。</p>
+  <p><b>未核实项：</b>MVRV / 实现价格当前值没拿到可信数字（见 <a href="https://studio.glassnode.com/charts/70aa2400-53ee-4cb3-477e-b55793aa210a?a=BTC">Glassnode</a>）；加息概率为 CME FedWatch 二手引用。</p><p><b>来源：</b>Bybit 行情 / 费率 / OI · alternative.me 恐贪 · <a href="https://fortune.com/2026/07/12/bitcoin-bear-market-three-drivers-rebound/">Fortune 07-12</a> · <a href="https://www.analyticsinsight.net/news/bitcoin-price-holds-near-usd-80k-as-traders-await-upcoming-fed-rate-decision">Analytics Insight 10-25</a>（引 Farside / CryptoQuant）· <a href="https://www.kucoin.com/blog/is-2026-btc-crypto-crash-different-will-it-recover">KuCoin 06-15</a> · 历史周期为训练知识。</p>
+  <p><b>风险提示：</b>周期模板只有 4 个样本，本轮回撤已浅于历史，模板可能正在失效。以上非投资建议，合约请控制仓位、设好止损。</p>
+</footer>
+</div>
+
+<script>
+/* 实时层：直接拉 Bybit 公开行情覆盖页面上的数字。拉不到就保留每日快照，红点提示。
+   注意：本文件经 Python string.Template 渲染，脚本里的美元符号要写成两个。 */
+(function(){
+  var MANUAL = [{"k": 85300, "label": null, "tag": "次级阻力", "sub": ""}, {"k": 59900, "label": null, "tag": "2 月低点", "sub": "与 6 月 57.8k 构成双底"}, {"k": 55500, "label": "53–58k", "tag": "第三腿目标", "sub": "Grayscale 58k / KuCoin 53–55k"}];   /* 手动价位 [{k,label,tag,sub}] */
+  var ATH_TS = 1759708800000;              /* 高点所在周的时间戳（ms） */
+  var API = "https://api.bybit.com/v5/market/";
+  var dot = document.getElementById("dot");
+  var byId = function(id){ return document.getElementById(id); };
+  var setText = function(id, t){ var el = byId(id); if (el) el.textContent = t; };
+  var k = function(v){ return (v/1000).toFixed(1) + "k"; };
+  var pct = function(a,b){ return (a/b - 1) * 100; };
+  var signed = function(x, d){ var s = x.toFixed(d); if (x < 0) s = "−" + s.slice(1); else s = "+" + s; return s + "%"; };
+  var get = function(path){
+    return fetch(API + path + "&category=linear&symbol=BTCUSDT").then(function(r){ return r.json(); })
+      .then(function(j){ if (j.retCode !== 0) throw new Error(j.retMsg); return j.result.list; });
+  };
+  var slow = null;   /* 均线、高低点等慢变量，10 分钟刷一次 */
+
+  function loadSlow(){
+    return Promise.all([
+      get("kline?interval=D&limit=200"),
+      get("kline?interval=W&limit=200"),
+      get("open-interest?intervalTime=1d&limit=60"),
+      get("account-ratio?period=4h&limit=1")
+    ]).then(function(res){
+      var d = res[0], w = res[1], oi = res[2], ls = res[3][0];
+      var closes = d.map(function(c){ return +c[4]; });
+      var sum = function(arr){ return arr.reduce(function(a,b){ return a+b; }, 0); };
+      var sma30 = sum(closes.slice(0,30)) / 30;
+      var ma200 = sum(closes) / closes.length;
+      var res60 = Math.max.apply(null, d.slice(1,61).map(function(c){ return +c[2]; }));
+      var sup30 = Math.min.apply(null, d.slice(1,31).map(function(c){ return +c[3]; }));
+      var ath = 0, athTs = 0;
+      w.forEach(function(c){ if (+c[2] > ath){ ath = +c[2]; athTs = +c[0]; } });
+      var low = Infinity, lowTs = 0;
+      w.forEach(function(c){ if (+c[0] > athTs && +c[3] < low){ low = +c[3]; lowTs = +c[0]; } });
+      if (low === Infinity){ low = +d[0][4]; lowTs = +d[0][0]; }
+      var oi60 = pct(+oi[0].openInterest, +oi[oi.length-1].openInterest);
+      var buy = +ls.buyRatio, ratio = buy / +ls.sellRatio;
+      slow = {sma30:sma30, ma200:ma200, res60:res60, sup30:sup30, ath:ath, athTs:athTs, low:low, lowTs:lowTs, oi60:oi60, ls:ratio, lsLong:buy*100};
+      var ym = function(ts){ var dt = new Date(ts); return dt.getFullYear() + "-" + ("0" + (dt.getMonth()+1)).slice(-2); };
+      setText("ath_k", k(ath)); setText("ath_ym", ym(athTs));
+      setText("low_k", k(low)); setText("low_ym", ym(lowTs));
+      setText("oi60", signed(oi60, 0).replace("%", "%"));
+      var oiNote = byId("oi_note");
+      if (oiNote){ oiNote.className = "s " + (oi60 > 10 ? "t-warn" : oi60 < -10 ? "t-good" : ""); oiNote.textContent = oi60 > 10 ? "价格横盘，仓位在堆" : oi60 < -10 ? "杠杆在退出" : "持平"; }
+      setText("ls_ratio", ratio.toFixed(2));
+      var lsNote = byId("ls_note");
+      if (lsNote){ lsNote.className = "s " + (ratio > 1.5 ? "t-bad" : ratio < 0.7 ? "t-good" : ""); lsNote.textContent = Math.round(buy*100) + (ratio > 1.5 ? "% 散户做多，拥挤" : ratio < 0.7 ? "% 做多，空头拥挤" : "% 做多，均衡"); }
+    });
+  }
+
+  function renderLadder(price){
+    if (!slow) return;
+    var levels = [
+      [slow.res60, null, "60 日高点", "周线站上 = 趋势反转"],
+      [slow.sma30, null, "30 日均线", ""],
+      [slow.sup30, null, "生死线", "30 日低点，破了别抄底"],
+      [slow.ma200, null, "200 日均线", ""],
+      [price, "NOW", "现价", "箱体中轴，赔率最差"]
+    ];
+    MANUAL.forEach(function(m){ levels.push([m.k, m.label || null, m.tag, m.sub || ""]); });
+    levels.sort(function(a,b){ return b[0] - a[0]; });
+    var ul = byId("ladder"); if (!ul) return;
+    ul.textContent = "";
+    levels.forEach(function(L){
+      var li = document.createElement("li");
+      if (L[1] === "NOW") li.className = "now";
+      var lv = document.createElement("span"); lv.className = "lv num";
+      lv.textContent = (L[1] === null || L[1] === "NOW") ? k(L[0]) : L[1];
+      var tag = document.createElement("span"); tag.className = "tag"; tag.textContent = L[2];
+      if (L[3]){ var sm = document.createElement("small"); sm.textContent = L[3]; tag.appendChild(document.createTextNode(" ")); tag.appendChild(sm); }
+      li.appendChild(lv); li.appendChild(tag); ul.appendChild(li);
+    });
+  }
+
+  function tick(){
+    get("tickers?").then(function(list){
+      var t = list[0], price = +t.lastPrice, f = +t.fundingRate * 100;
+      setText("price", "$" + Math.round(price).toLocaleString("en-US"));
+      setText("funding", signed(f, 3));
+      var fn = byId("funding_note");
+      if (fn){ fn.className = "s " + (f > 0.05 ? "t-bad" : "t-good"); fn.textContent = f > 0.05 ? "过热，杠杆多头拥挤" : f < -0.01 ? "负费率，空头拥挤" : "中性，杠杆已清"; }
+      if (slow){
+        setText("chg_ath", signed(pct(price, slow.ath), 0));
+        setText("chg_low", signed(pct(price, slow.low), 0));
+        var dd = Math.abs(pct(price, slow.ath));
+        setText("drawdown", "−" + dd.toFixed(0) + "%");
+        setText("dd_note", dd < 65 ? "异常浅" : "接近历史");
+        renderLadder(price);
+      }
+      var now = new Date();
+      setText("asof", "实时 " + ("0"+now.getHours()).slice(-2) + ":" + ("0"+now.getMinutes()).slice(-2) + ":" + ("0"+now.getSeconds()).slice(-2));
+      dot.className = "dot live";
+    }).catch(function(){
+      dot.className = "dot err";
+      setText("asof", "实时连接失败，显示快照 2026-10-27 16:12");
+    });
+  }
+
+  function loadFng(){
+    fetch("https://api.alternative.me/fng/?limit=1").then(function(r){ return r.json(); })
+      .then(function(j){ setText("fng", j.data[0].value); }).catch(function(){});
+  }
+
+  loadSlow().then(tick, function(){ tick(); });
+  loadFng();
+  setInterval(tick, 10000);
+  setInterval(function(){ loadSlow().catch(function(){}); }, 600000);
+  document.addEventListener("visibilitychange", function(){ if (!document.hidden) tick(); });
+})();
+</script>
+</body></html>

@@ -1,0 +1,342 @@
+<title>BTC 周期定位</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 布局：手机单列卡片流，≥700px（Fold 内屏）两列；数字用等宽字体对齐 */
+:root{
+  --bg:#f3f1ec;
+  --card:#ffffff;
+  --fg:#1c1b18;
+  --muted:#6b675e;
+  --line:#dedad1;
+  --accent:#b8731c;
+  --good:#2f7d4f;
+  --warn:#b8731c;
+  --bad:#b4372f;
+  --good-bg:#e4f1e8;
+  --warn-bg:#f6e9d6;
+  --bad-bg:#f5e1df;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:-apple-system,"PingFang SC","Noto Sans SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#15161a;--card:#1f2127;--fg:#ecebe6;--muted:#9c998f;--line:#32353d;
+    --accent:#e0a04a;--good:#5fc285;--warn:#e0a04a;--bad:#e8706a;
+    --good-bg:#1d3327;--warn-bg:#3a2d18;--bad-bg:#3d2220;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15161a;--card:#1f2127;--fg:#ecebe6;--muted:#9c998f;--line:#32353d;
+  --accent:#e0a04a;--good:#5fc285;--warn:#e0a04a;--bad:#e8706a;
+  --good-bg:#1d3327;--warn-bg:#3a2d18;--bad-bg:#3d2220;color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.5;margin:0}
+.wrap{max-width:960px;margin:0 auto;padding-block:20px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{margin-bottom:14px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:26px;margin:2px 0 4px;line-height:1.2;text-wrap:balance}
+.asof{font-size:13px;color:var(--muted)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--line);margin-right:6px;vertical-align:middle}
+.dot.live{background:var(--good)}
+.dot.err{background:var(--bad)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+@media (min-width:700px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.span2{grid-column:1/-1}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.card h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:600}
+
+/* 结论卡 */
+.verdict{border-left:5px solid var(--accent)}
+.verdict .big{font-size:24px;font-weight:700;line-height:1.25;margin:0 0 6px}
+.verdict .sub{color:var(--muted);margin:0 0 12px}
+.price{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline}
+.price .p{font-size:30px;font-weight:600}
+.price .d{font-size:13px;color:var(--muted)}
+
+/* 周期时钟 */
+.clock{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin-top:4px}
+.ph{text-align:center;font-size:11px;line-height:1.25;color:var(--muted);min-width:0;overflow-wrap:anywhere}
+.ph .bar{height:8px;border-radius:4px;background:var(--line);margin-bottom:6px}
+.ph.done .bar{background:var(--good)}
+.ph.now .bar{background:var(--accent);box-shadow:0 0 0 3px var(--warn-bg)}
+.ph.now{color:var(--fg);font-weight:600}
+.clock-note{font-size:13px;color:var(--muted);margin-top:10px}
+
+/* 条件清单 */
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:10px;align-items:flex-start}
+.chip{flex:0 0 auto;min-width:44px;text-align:center;font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;margin-top:2px}
+.ok{background:var(--good-bg);color:var(--good)}
+.no{background:var(--bad-bg);color:var(--bad)}
+.half{background:var(--warn-bg);color:var(--warn)}
+.row b{display:block}
+.row small{color:var(--muted);display:block;font-size:13px}
+details{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}
+summary{cursor:pointer;color:var(--accent);font-size:14px;font-weight:600}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+details p{margin:8px 0 0;font-size:14px;color:var(--muted)}
+
+/* 数据格 */
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kv > div{border:1px solid var(--line);border-radius:10px;padding:10px;min-width:0}
+.kv .k{font-size:12px;color:var(--muted);margin-bottom:2px}
+.kv .v{font-size:18px;font-weight:600;line-height:1.2}
+.kv .s{font-size:12px;color:var(--muted);margin-top:2px}
+.t-good{color:var(--good)}.t-bad{color:var(--bad)}.t-warn{color:var(--warn)}
+
+/* 价位梯 */
+.ladder{list-style:none;margin:0;padding:0}
+.ladder li{display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);align-items:baseline}
+.ladder li:last-child{border-bottom:0}
+.ladder .lv{font-weight:600;font-size:16px}
+.ladder .tag{font-size:14px}
+.ladder .tag small{color:var(--muted);display:block;font-size:12px}
+.ladder li.now{background:var(--warn-bg);margin:0 -16px;padding-left:16px;padding-right:16px;border-radius:0}
+.ladder li.now .lv{color:var(--accent)}
+
+/* 情景 */
+.sc{display:flex;flex-direction:column;gap:10px}
+.sc div{min-width:0}
+.sc .head{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.sc .meter{height:7px;border-radius:4px;background:var(--line);overflow:hidden;margin:5px 0}
+.sc .meter i{display:block;height:100%;background:var(--accent)}
+.sc .meter.bad i{background:var(--bad)}
+.sc .meter.good i{background:var(--good)}
+.sc p{margin:0;font-size:14px;color:var(--muted)}
+
+/* 操作 */
+.act{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.act li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:baseline}
+.act .n{font-family:var(--mono);color:var(--accent);font-weight:600}
+
+/* 下一事件 */
+.event{display:flex;gap:12px;align-items:center}
+.event .date{font-size:22px;font-weight:700;color:var(--accent);white-space:nowrap}
+.event p{margin:0;font-size:14px;color:var(--muted)}
+
+footer{margin-top:16px;font-size:12px;color:var(--muted);line-height:1.6}
+footer a{color:var(--accent)}
+.score{font-size:13px;color:var(--muted);margin-left:6px;font-weight:400;text-transform:none;letter-spacing:0}
+@media (prefers-reduced-motion:no-preference){.ph.now .bar{animation:pulse 2s ease-in-out infinite}}
+@keyframes pulse{50%{box-shadow:0 0 0 6px var(--warn-bg)}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Bitcoin · 周期定位</div>
+  <h1>$title</h1>
+  <div class="asof"><span class="dot" id="dot"></span><span id="asof">快照 $asof（吉隆坡）</span> · Bybit 永续 · 判断每日 08:38 复核</div>
+</header>
+
+<div class="grid">
+
+<section class="card verdict span2">
+  <p class="big">$verdict_big</p>
+  <p class="sub">$verdict_sub</p>
+  <div class="price">
+    <span class="p num" id="price">$$$price</span>
+    <span class="d">距高点 <b class="num t-bad" id="chg_ath">$chg_ath</b>（<span id="ath_k">$ath_k</span>，<span id="ath_ym">$ath_ym</span>）</span>
+    <span class="d">距低点 <b class="num t-good" id="chg_low">$chg_low</b>（<span id="low_k">$low_k</span>，<span id="low_ym">$low_ym</span>）</span>
+  </div>
+</section>
+
+<section class="card span2">
+  <h2>周期时钟</h2>
+  <div class="clock">
+    <div class="ph $ph1"><div class="bar"></div>①顶部<br>恐慌跌</div>
+    <div class="ph $ph2"><div class="bar"></div>②杠杆<br>连环爆</div>
+    <div class="ph $ph3"><div class="bar"></div>③极恐<br>双底</div>
+    <div class="ph $ph4"><div class="bar"></div>④磨底<br>反复打</div>
+    <div class="ph $ph5"><div class="bar"></div>⑤联储<br>转向</div>
+    <div class="ph $ph6"><div class="bar"></div>⑥新买家<br>减半前</div>
+  </div>
+  <p class="clock-note">$clock_note</p>
+</section>
+
+<section class="card">
+  <h2>牛市四条件 <span class="score">$cond_score / 4</span></h2>
+  <ul class="list">
+$cond_rows
+  </ul>
+  <details><summary>为什么这四条</summary>
+    <p>2013、2017、2021、2025 四轮牛市都同时具备：前一熊清完杠杆 → 联储从紧转松 → 减半供给窗口 → 一个以前没有的新买家（散户→ICO→机构→ETF）。没有一轮牛市是在加息周期里启动的。</p>
+  </details>
+</section>
+
+<section class="card">
+  <h2>转牛验证清单 <span class="score">$check_score / 5</span></h2>
+  <ul class="list">
+$check_rows
+  </ul>
+  <p class="clock-note">满足 ① + ③ 即可确认熊转牛。</p>
+</section>
+
+<section class="card">
+  <h2>关键数据</h2>
+  <div class="kv">
+    <div><div class="k">资金费率</div><div class="v num" id="funding">$funding</div><div class="s $funding_cls" id="funding_note">$funding_note</div></div>
+    <div><div class="k">多空比（Bybit）</div><div class="v num" id="ls_ratio">$ls_ratio</div><div class="s $ls_cls" id="ls_note">$ls_note</div></div>
+    <div><div class="k">ETF 净流向 <span class="num">$etf_date</span></div><div class="v num $etf_cls">$etf_value</div><div class="s">$etf_note</div></div>
+    <div><div class="k">联储利率</div><div class="v num">$fed_rate</div><div class="s t-bad">$fed_note</div></div>
+    <div><div class="k">恐惧贪婪</div><div class="v num" id="fng">$fng</div><div class="s">$fng_note</div></div>
+    <div><div class="k">鲸鱼持仓</div><div class="v num t-good">$whale_value</div><div class="s">$whale_note</div></div>
+    <div><div class="k">OI（60 日）</div><div class="v num" id="oi60">$oi60</div><div class="s $oi_cls" id="oi_note">$oi_note</div></div>
+    <div><div class="k">本轮回撤</div><div class="v num" id="drawdown">$drawdown</div><div class="s t-warn">历史 −77%～−93%，<span id="dd_note">$dd_note</span></div></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>关键价位</h2>
+  <ul class="ladder" id="ladder">
+$ladder_rows
+  </ul>
+</section>
+
+<section class="card">
+  <h2>三个情景</h2>
+  <div class="sc">
+$scenario_rows
+  </div>
+</section>
+
+<section class="card">
+  <h2>操作</h2>
+  <ul class="act">
+$action_rows
+  </ul>
+</section>
+
+<section class="card">
+  <h2>下一个转折点</h2>
+  <div class="event">
+    <div class="date num">$event_date</div>
+    <p>$event_text</p>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <p><b>自动部分：</b>价格、高低点、回撤、费率、多空比、OI、恐贪、均线、价位梯（Bybit / alternative.me，每日拉取）。<b>手动部分：</b>ETF、联储、鲸鱼、判断与情景（由 Claude 每日复核，标注数据日期）。</p>
+  $footer_notes
+  <p><b>风险提示：</b>周期模板只有 4 个样本，本轮回撤已浅于历史，模板可能正在失效。以上非投资建议，合约请控制仓位、设好止损。</p>
+</footer>
+</div>
+
+<script>
+/* 实时层：直接拉 Bybit 公开行情覆盖页面上的数字。拉不到就保留每日快照，红点提示。
+   注意：本文件经 Python string.Template 渲染，脚本里的美元符号要写成两个。 */
+(function(){
+  var MANUAL = $manual_levels_json;   /* 手动价位 [{k,label,tag,sub}] */
+  var ATH_TS = $ath_ts;              /* 高点所在周的时间戳（ms） */
+  var API = "https://api.bybit.com/v5/market/";
+  var dot = document.getElementById("dot");
+  var byId = function(id){ return document.getElementById(id); };
+  var setText = function(id, t){ var el = byId(id); if (el) el.textContent = t; };
+  var k = function(v){ return (v/1000).toFixed(1) + "k"; };
+  var pct = function(a,b){ return (a/b - 1) * 100; };
+  var signed = function(x, d){ var s = x.toFixed(d); if (x < 0) s = "−" + s.slice(1); else s = "+" + s; return s + "%"; };
+  var get = function(path){
+    return fetch(API + path + "&category=linear&symbol=BTCUSDT").then(function(r){ return r.json(); })
+      .then(function(j){ if (j.retCode !== 0) throw new Error(j.retMsg); return j.result.list; });
+  };
+  var slow = null;   /* 均线、高低点等慢变量，10 分钟刷一次 */
+
+  function loadSlow(){
+    return Promise.all([
+      get("kline?interval=D&limit=200"),
+      get("kline?interval=W&limit=200"),
+      get("open-interest?intervalTime=1d&limit=60"),
+      get("account-ratio?period=4h&limit=1")
+    ]).then(function(res){
+      var d = res[0], w = res[1], oi = res[2], ls = res[3][0];
+      var closes = d.map(function(c){ return +c[4]; });
+      var sum = function(arr){ return arr.reduce(function(a,b){ return a+b; }, 0); };
+      var sma30 = sum(closes.slice(0,30)) / 30;
+      var ma200 = sum(closes) / closes.length;
+      var res60 = Math.max.apply(null, d.slice(1,61).map(function(c){ return +c[2]; }));
+      var sup30 = Math.min.apply(null, d.slice(1,31).map(function(c){ return +c[3]; }));
+      var ath = 0, athTs = 0;
+      w.forEach(function(c){ if (+c[2] > ath){ ath = +c[2]; athTs = +c[0]; } });
+      var low = Infinity, lowTs = 0;
+      w.forEach(function(c){ if (+c[0] > athTs && +c[3] < low){ low = +c[3]; lowTs = +c[0]; } });
+      if (low === Infinity){ low = +d[0][4]; lowTs = +d[0][0]; }
+      var oi60 = pct(+oi[0].openInterest, +oi[oi.length-1].openInterest);
+      var buy = +ls.buyRatio, ratio = buy / +ls.sellRatio;
+      slow = {sma30:sma30, ma200:ma200, res60:res60, sup30:sup30, ath:ath, athTs:athTs, low:low, lowTs:lowTs, oi60:oi60, ls:ratio, lsLong:buy*100};
+      var ym = function(ts){ var dt = new Date(ts); return dt.getFullYear() + "-" + ("0" + (dt.getMonth()+1)).slice(-2); };
+      setText("ath_k", k(ath)); setText("ath_ym", ym(athTs));
+      setText("low_k", k(low)); setText("low_ym", ym(lowTs));
+      setText("oi60", signed(oi60, 0).replace("%", "%"));
+      var oiNote = byId("oi_note");
+      if (oiNote){ oiNote.className = "s " + (oi60 > 10 ? "t-warn" : oi60 < -10 ? "t-good" : ""); oiNote.textContent = oi60 > 10 ? "价格横盘，仓位在堆" : oi60 < -10 ? "杠杆在退出" : "持平"; }
+      setText("ls_ratio", ratio.toFixed(2));
+      var lsNote = byId("ls_note");
+      if (lsNote){ lsNote.className = "s " + (ratio > 1.5 ? "t-bad" : ratio < 0.7 ? "t-good" : ""); lsNote.textContent = Math.round(buy*100) + (ratio > 1.5 ? "% 散户做多，拥挤" : ratio < 0.7 ? "% 做多，空头拥挤" : "% 做多，均衡"); }
+    });
+  }
+
+  function renderLadder(price){
+    if (!slow) return;
+    var levels = [
+      [slow.res60, null, "60 日高点", "周线站上 = 趋势反转"],
+      [slow.sma30, null, "30 日均线", ""],
+      [slow.sup30, null, "生死线", "30 日低点，破了别抄底"],
+      [slow.ma200, null, "200 日均线", ""],
+      [price, "NOW", "现价", "箱体中轴，赔率最差"]
+    ];
+    MANUAL.forEach(function(m){ levels.push([m.k, m.label || null, m.tag, m.sub || ""]); });
+    levels.sort(function(a,b){ return b[0] - a[0]; });
+    var ul = byId("ladder"); if (!ul) return;
+    ul.textContent = "";
+    levels.forEach(function(L){
+      var li = document.createElement("li");
+      if (L[1] === "NOW") li.className = "now";
+      var lv = document.createElement("span"); lv.className = "lv num";
+      lv.textContent = (L[1] === null || L[1] === "NOW") ? k(L[0]) : L[1];
+      var tag = document.createElement("span"); tag.className = "tag"; tag.textContent = L[2];
+      if (L[3]){ var sm = document.createElement("small"); sm.textContent = L[3]; tag.appendChild(document.createTextNode(" ")); tag.appendChild(sm); }
+      li.appendChild(lv); li.appendChild(tag); ul.appendChild(li);
+    });
+  }
+
+  function tick(){
+    get("tickers?").then(function(list){
+      var t = list[0], price = +t.lastPrice, f = +t.fundingRate * 100;
+      setText("price", "$$" + Math.round(price).toLocaleString("en-US"));
+      setText("funding", signed(f, 3));
+      var fn = byId("funding_note");
+      if (fn){ fn.className = "s " + (f > 0.05 ? "t-bad" : "t-good"); fn.textContent = f > 0.05 ? "过热，杠杆多头拥挤" : f < -0.01 ? "负费率，空头拥挤" : "中性，杠杆已清"; }
+      if (slow){
+        setText("chg_ath", signed(pct(price, slow.ath), 0));
+        setText("chg_low", signed(pct(price, slow.low), 0));
+        var dd = Math.abs(pct(price, slow.ath));
+        setText("drawdown", "−" + dd.toFixed(0) + "%");
+        setText("dd_note", dd < 65 ? "异常浅" : "接近历史");
+        renderLadder(price);
+      }
+      var now = new Date();
+      setText("asof", "实时 " + ("0"+now.getHours()).slice(-2) + ":" + ("0"+now.getMinutes()).slice(-2) + ":" + ("0"+now.getSeconds()).slice(-2));
+      dot.className = "dot live";
+    }).catch(function(){
+      dot.className = "dot err";
+      setText("asof", "实时连接失败，显示快照 $asof");
+    });
+  }
+
+  function loadFng(){
+    fetch("https://api.alternative.me/fng/?limit=1").then(function(r){ return r.json(); })
+      .then(function(j){ setText("fng", j.data[0].value); }).catch(function(){});
+  }
+
+  loadSlow().then(tick, function(){ tick(); });
+  loadFng();
+  setInterval(tick, 10000);
+  setInterval(function(){ loadSlow().catch(function(){}); }, 600000);
+  document.addEventListener("visibilitychange", function(){ if (!document.hidden) tick(); });
+})();
+</script>
