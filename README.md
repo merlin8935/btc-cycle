@@ -1,6 +1,9 @@
 # BTC 周期定位页
 
-手机看的一页：https://claude.ai/artifact/KA7ywjoXcqZfRUJ3HgRWeb （私密，需登录 Claude）
+手机看的一页（主用，价格实时）：https://merlin8935.github.io/btc-cycle/
+备份（Claude Artifact，私密，需登录，价格为每日快照）：https://claude.ai/artifact/KA7ywjoXcqZfRUJ3HgRWeb
+
+仓库：https://github.com/merlin8935/btc-cycle （公开；GitHub Pages 从 main 分支 `/docs` 发布）
 
 | 文件 | 作用 | 谁改 |
 |---|---|---|
