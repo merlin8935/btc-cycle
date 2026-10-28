@@ -89,6 +89,10 @@ details p{margin:8px 0 0;font-size:14px;color:var(--muted)}
 .kv .s{font-size:12px;color:var(--muted);margin-top:2px}
 .t-good{color:var(--good)}.t-bad{color:var(--bad)}.t-warn{color:var(--warn)}
 
+/* 爆仓实时流 */
+.feed{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted);line-height:1.5}
+.feed b.l{color:var(--bad)}.feed b.s{color:var(--good)}
+
 /* 价位梯 */
 .ladder{list-style:none;margin:0;padding:0}
 .ladder li{display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);align-items:baseline}
@@ -131,7 +135,7 @@ footer a{color:var(--accent)}
 <header>
   <div class="eyebrow">Bitcoin · 周期定位</div>
   <h1>熊市第 12 个月，筑底期</h1>
-  <div class="asof"><span class="dot" id="dot"></span><span id="asof">快照 2026-10-28 08:38（吉隆坡）</span> · Bybit 永续 · 判断每日 08:38 复核</div>
+  <div class="asof"><span class="dot" id="dot"></span><span id="asof">快照 2026-10-28 16:43（吉隆坡）</span> · Bybit 永续 · 判断每日 08:38 复核</div>
 </header>
 
 <div class="grid">
@@ -140,9 +144,9 @@ footer a{color:var(--accent)}
   <p class="big">该跌的跌完大半，该涨的还没来。</p>
   <p class="sub">底部区域大概率已在 57.8k 出现（2 月 / 6 月两次在 58–60k 止跌），但牛市启动条件还差两个：联储没转松、没有新买家。</p>
   <div class="price">
-    <span class="p num" id="price">$80,752</span>
-    <span class="d">距高点 <b class="num t-bad" id="chg_ath">−36%</b>（<span id="ath_k">126.2k</span>，<span id="ath_ym">2025-10</span>）</span>
-    <span class="d">距低点 <b class="num t-good" id="chg_low">+40%</b>（<span id="low_k">57.8k</span>，<span id="low_ym">2026-06</span>）</span>
+    <span class="p num" id="price">$81,654</span>
+    <span class="d">距高点 <b class="num t-bad" id="chg_ath">−35%</b>（<span id="ath_k">126.2k</span>，<span id="ath_ym">2025-10</span>）</span>
+    <span class="d">距低点 <b class="num t-good" id="chg_low">+41%</b>（<span id="low_k">57.8k</span>，<span id="low_ym">2026-06</span>）</span>
   </div>
 </section>
 
@@ -188,14 +192,26 @@ footer a{color:var(--accent)}
   <h2>关键数据</h2>
   <div class="kv">
     <div><div class="k">资金费率</div><div class="v num" id="funding">+0.010%</div><div class="s t-good" id="funding_note">中性，杠杆已清</div></div>
-    <div><div class="k">多空比（Bybit）</div><div class="v num" id="ls_ratio">1.92</div><div class="s t-bad" id="ls_note">66% 散户做多，拥挤</div></div>
+    <div><div class="k">多空比（Bybit）</div><div class="v num" id="ls_ratio">1.87</div><div class="s t-bad" id="ls_note">65% 散户做多，拥挤</div></div>
     <div><div class="k">ETF 净流向 <span class="num">10-22～23</span></div><div class="v num t-bad">−$7.7 亿</div><div class="s">前三日曾 +$10.7 亿（Farside）</div></div>
     <div><div class="k">联储利率</div><div class="v num">3.75–4.00%</div><div class="s t-bad">CPI ~4.1%，10-28 市场押维持，OIS 加息概率 9.6%（10-25），12-09 加息预期升温</div></div>
     <div><div class="k">恐惧贪婪</div><div class="v num" id="fng">51</div><div class="s">6 月极度恐惧时曾 8–12</div></div>
     <div><div class="k">鲸鱼持仓</div><div class="v num t-good">+6 万 BTC</div><div class="s">8 月底以来吸筹（CryptoQuant 10-25）</div></div>
     <div><div class="k">OI（60 日）</div><div class="v num" id="oi60">+25%</div><div class="s t-warn" id="oi_note">价格横盘，仓位在堆</div></div>
-    <div><div class="k">本轮回撤</div><div class="v num" id="drawdown">−36%</div><div class="s t-warn">历史 −77%～−93%，<span id="dd_note">异常浅</span></div></div>
+    <div><div class="k">本轮回撤</div><div class="v num" id="drawdown">−35%</div><div class="s t-warn">历史 −77%～−93%，<span id="dd_note">异常浅</span></div></div>
   </div>
+</section>
+
+<section class="card">
+  <h2>爆仓 <span class="score">OKX 永续样本 · 24h</span></h2>
+  <div class="kv">
+    <div><div class="k">多单爆仓（跌）</div><div class="v num t-bad" id="liq_long">$398K</div><div class="s">下跌时被强平</div></div>
+    <div><div class="k">空单爆仓（涨）</div><div class="v num t-good" id="liq_short">$7.0M</div><div class="s">反弹时被逼空</div></div>
+    <div><div class="k">最大单笔</div><div class="v num" id="liq_big">$696K</div><div class="s" id="liq_big_note">空单 @ 81.6k</div></div>
+    <div><div class="k">对比 7 日均值</div><div class="v num " id="liq_avg">—</div><div class="s" id="liq_avg_note">均值积累中（0/3 天）</div></div>
+  </div>
+  <p class="clock-note t-good" id="liq_note">空头被轧：反弹逼空，筑底期常见（24h 989 笔）</p>
+  <div class="feed" id="liq_feed">实时爆仓流（Bybit + Binance）连接中…</div>
 </section>
 
 <section class="card">
@@ -204,7 +220,7 @@ footer a{color:var(--accent)}
     <li><span class="lv num">87.4k</span><span class="tag">60 日高点 <small>周线站上 = 趋势反转</small></span></li>
     <li><span class="lv num">85.3k</span><span class="tag">次级阻力</span></li>
     <li><span class="lv num">82.7k</span><span class="tag">30 日均线</span></li>
-    <li class="now"><span class="lv num">80.8k</span><span class="tag">现价 <small>箱体中轴，赔率最差</small></span></li>
+    <li class="now"><span class="lv num">81.7k</span><span class="tag">现价 <small>箱体中轴，赔率最差</small></span></li>
     <li><span class="lv num">79.2k</span><span class="tag">生死线 <small>30 日低点，破了别抄底</small></span></li>
     <li><span class="lv num">73.1k</span><span class="tag">200 日均线</span></li>
     <li><span class="lv num">59.9k</span><span class="tag">2 月低点 <small>与 6 月 57.8k 构成双底</small></span></li>
@@ -243,7 +259,7 @@ footer a{color:var(--accent)}
 </div>
 
 <footer>
-  <p><b>自动部分：</b>价格、高低点、回撤、费率、多空比、OI、恐贪、均线、价位梯（Bybit / alternative.me，每日拉取）。<b>手动部分：</b>ETF、联储、鲸鱼、判断与情景（由 Claude 每日复核，标注数据日期）。</p>
+  <p><b>自动部分：</b>价格、高低点、回撤、费率、多空比、OI、恐贪、均线、价位梯、爆仓（Bybit / alternative.me / OKX，每日拉取；爆仓为 OKX 单所样本，非全市场）。<b>手动部分：</b>ETF、联储、鲸鱼、判断与情景（由 Claude 每日复核，标注数据日期）。</p>
   <p><b>未核实项：</b>MVRV / 实现价格当前值没拿到可信数字（见 <a href="https://studio.glassnode.com/charts/70aa2400-53ee-4cb3-477e-b55793aa210a?a=BTC">Glassnode</a>）；加息概率为 CME FedWatch 二手引用。</p><p><b>来源：</b>Bybit 行情 / 费率 / OI · alternative.me 恐贪 · <a href="https://fortune.com/2026/07/12/bitcoin-bear-market-three-drivers-rebound/">Fortune 07-12</a> · <a href="https://www.analyticsinsight.net/news/bitcoin-price-holds-near-usd-80k-as-traders-await-upcoming-fed-rate-decision">Analytics Insight 10-25</a>（引 Farside / CryptoQuant）· <a href="https://www.kucoin.com/blog/is-2026-btc-crypto-crash-different-will-it-recover">KuCoin 06-15</a> · 历史周期为训练知识。</p>
   <p><b>风险提示：</b>周期模板只有 4 个样本，本轮回撤已浅于历史，模板可能正在失效。以上非投资建议，合约请控制仓位、设好止损。</p>
 </footer>
@@ -346,7 +362,7 @@ footer a{color:var(--accent)}
       dot.className = "dot live";
     }).catch(function(){
       dot.className = "dot err";
-      setText("asof", "实时连接失败，显示快照 2026-10-28 08:38");
+      setText("asof", "实时连接失败，显示快照 2026-10-28 16:43");
     });
   }
 
@@ -355,7 +371,96 @@ footer a{color:var(--accent)}
       .then(function(j){ setText("fng", j.data[0].value); }).catch(function(){});
   }
 
+  /* 爆仓层：OKX 公开接口允许跨域，页面自己算 24h 多/空，10 分钟刷一次；
+     Bybit + Binance WebSocket 推实时爆仓单，页面打开期间累计。 */
+  var OKX = "https://www.okx.com/api/v5/public/liquidation-orders?instType=SWAP&state=filled&limit=100&uly=";
+  var LIQ_AVG = 0;   /* 7 日均值（美元），不足 3 天为 0 */
+  var m = function(x){ return x >= 1e9 ? "$" + (x/1e9).toFixed(2) + "B" : x >= 1e6 ? "$" + (x/1e6).toFixed(1) + "M" : "$" + (x/1e3).toFixed(0) + "K"; };
+
+  function okxPages(uly, perContract, cutoff, after, acc, depth){
+    return fetch(OKX + uly + (after ? "&after=" + after : "")).then(function(r){ return r.json(); }).then(function(j){
+      var d = (j.data && j.data[0] && j.data[0].details) || [];
+      var oldest = Infinity;
+      d.forEach(function(x){
+        var ts = +x.ts, px = +x.bkPx, sz = +x.sz, usd = perContract ? sz * perContract : sz * 0.01 * px;
+        if (ts < oldest) oldest = ts;
+        if (ts >= cutoff) acc.push([ts, x.posSide, usd, px]);
+      });
+      if (d.length < 100 || oldest < cutoff || depth >= 30) return acc;
+      return okxPages(uly, perContract, cutoff, oldest, acc, depth + 1);
+    });
+  }
+  function loadLiq(){
+    var cutoff = Date.now() - 86400000, acc = [];
+    return okxPages("BTC-USDT", 0, cutoff, null, acc, 0)
+      .then(function(){ return okxPages("BTC-USD", 100, cutoff, null, acc, 0); })
+      .then(function(rows){
+        var L = 0, S = 0, big = null;
+        rows.forEach(function(r){ if (r[1] === "long") L += r[2]; else S += r[2]; if (!big || r[2] > big[2]) big = r; });
+        setText("liq_long", m(L)); setText("liq_short", m(S));
+        if (big){ setText("liq_big", m(big[2])); setText("liq_big_note", (big[1] === "long" ? "多单 @ " : "空单 @ ") + k(big[3])); }
+        var note = byId("liq_note");
+        if (note){
+          note.className = "clock-note " + (L > 2*S ? "t-bad" : S > 2*L ? "t-good" : "");
+          note.textContent = (L > 2*S ? "多头被杀：下跌中杠杆在清，阶段②③的特征" : S > 2*L ? "空头被轧：反弹逼空，筑底期常见" : "多空均衡，无单边清算") + "（24h " + rows.length + " 笔）";
+        }
+        if (LIQ_AVG > 0){
+          var ratio = (L + S) / LIQ_AVG, av = byId("liq_avg");
+          setText("liq_avg", ratio.toFixed(1) + "×");
+          if (av) av.className = "v num " + (ratio > 3 ? "t-bad" : ratio < 0.5 ? "t-good" : "");
+          setText("liq_avg_note", (ratio > 3 ? "爆仓潮" : ratio < 0.5 ? "清淡" : "正常") + "，7 日均值 " + m(LIQ_AVG));
+        }
+      }).catch(function(){});
+  }
+
+  var feed = byId("liq_feed"), feedLong = 0, feedShort = 0, feedN = 0, wsOpen = false;
+  function wsReady(){ wsOpen = true; if (!feedN) feed.textContent = "实时爆仓流已连上（Bybit + Binance），等待下一笔…"; }
+  function onLiq(src, side, qty, px){
+    /* side = 被强平的持仓方向 */
+    var usd = qty * px; feedN++; if (side === "long") feedLong += usd; else feedShort += usd;
+    var t = new Date(), hh = ("0"+t.getHours()).slice(-2) + ":" + ("0"+t.getMinutes()).slice(-2) + ":" + ("0"+t.getSeconds()).slice(-2);
+    feed.textContent = "";
+    var a = document.createElement("div");
+    a.appendChild(document.createTextNode("最近 " + hh + " " + src + " "));
+    var b = document.createElement("b"); b.className = side === "long" ? "l" : "s";
+    b.textContent = (side === "long" ? "多单爆 " : "空单爆 ") + m(usd); a.appendChild(b);
+    a.appendChild(document.createTextNode(" @ " + k(px)));
+    var c = document.createElement("div");
+    c.textContent = "开页以来 " + feedN + " 笔：多 " + m(feedLong) + " / 空 " + m(feedShort);
+    feed.appendChild(a); feed.appendChild(c);
+  }
+  function wsBybit(){
+    try {
+      var ws = new WebSocket("wss://stream.bybit.com/v5/public/linear");
+      ws.onopen = function(){ wsReady(); ws.send(JSON.stringify({op:"subscribe", args:["allLiquidation.BTCUSDT"]})); };
+      ws.onmessage = function(e){
+        var j = JSON.parse(e.data); if (!j.data) return;
+        /* Bybit 文档：S=Buy 表示多头仓位被强平 */
+        j.data.forEach(function(x){ onLiq("Bybit", x.S === "Buy" ? "long" : "short", +x.v, +x.p); });
+      };
+      ws.onclose = function(){ setTimeout(wsBybit, 5000); };
+      setInterval(function(){ if (ws.readyState === 1) ws.send(JSON.stringify({op:"ping"})); }, 20000);
+    } catch(e){}
+  }
+  function wsBinance(){
+    try {
+      var ws = new WebSocket("wss://fstream.binance.com/ws/btcusdt@forceOrder");
+      ws.onopen = wsReady;
+      ws.onmessage = function(e){
+        var o = JSON.parse(e.data).o; if (!o) return;
+        /* Binance：强平单 SELL 表示多头仓位被强平 */
+        onLiq("Binance", o.S === "SELL" ? "long" : "short", +o.q, +o.ap);
+      };
+      ws.onclose = function(){ setTimeout(wsBinance, 5000); };
+    } catch(e){}
+  }
+
   loadSlow().then(tick, function(){ tick(); });
+  loadLiq(); setInterval(loadLiq, 600000);
+  if (feed && window.WebSocket){
+    wsBybit(); wsBinance();
+    setTimeout(function(){ if (!wsOpen) feed.textContent = "实时爆仓流在此环境不可用（github.io 版支持）；上方 24h 数据每 10 分钟刷新。"; }, 15000);
+  }
   loadFng();
   setInterval(tick, 10000);
   setInterval(function(){ loadSlow().catch(function(){}); }, 600000);

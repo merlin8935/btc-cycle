@@ -33,6 +33,7 @@ PAGES_TAIL = '</body></html>'
 
 KL = timezone(timedelta(hours=8))
 BYBIT = "https://api.bybit.com/v5/market"
+OKX_LIQ = "https://www.okx.com/api/v5/public/liquidation-orders"
 HALVING_NEXT = datetime(2028, 4, 1, tzinfo=KL)
 
 
@@ -58,6 +59,44 @@ def k(v):
 
 def pct(a, b):
     return (a / b - 1) * 100
+
+
+def usd_m(x):
+    """7_300_000 -> '$7.3M'"""
+    return f"${x / 1e9:.2f}B" if x >= 1e9 else f"${x / 1e6:.1f}M" if x >= 1e6 else f"${x / 1e3:.0f}K"
+
+
+def fetch_okx_liq(hours=24):
+    """OKX 永续 BTC 爆仓单（公开接口，只保留约 1 天），按多/空汇总成美元。
+    USDT 本位 1 张 = 0.01 BTC；币本位 1 张 = 100 USD。"""
+    cutoff = datetime.now(timezone.utc).timestamp() * 1000 - hours * 3600 * 1000
+    rows = []  # (ts, posSide, usd, px)
+    for uly, per_contract in (("BTC-USDT", None), ("BTC-USD", 100.0)):
+        after = None
+        for _ in range(30):
+            params = dict(instType="SWAP", state="filled", limit=100, uly=uly)
+            if after:
+                params["after"] = after
+            r = requests.get(OKX_LIQ, params=params, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
+            r.raise_for_status()
+            d = r.json().get("data") or []
+            det = d[0]["details"] if d else []
+            if not det:
+                break
+            for x in det:
+                ts, px, sz = int(x["ts"]), float(x["bkPx"]), float(x["sz"])
+                usd = sz * per_contract if per_contract else sz * 0.01 * px
+                if ts >= cutoff:
+                    rows.append((ts, x["posSide"], usd, px))
+            oldest = min(int(x["ts"]) for x in det)
+            if oldest < cutoff or len(det) < 100:
+                break
+            after = oldest
+    big = max(rows, key=lambda r: r[2]) if rows else (0, "", 0.0, 0.0)
+    return dict(liq_ok=True, liq_n=len(rows),
+                liq_long=sum(u for _, s, u, _ in rows if s == "long"),
+                liq_short=sum(u for _, s, u, _ in rows if s == "short"),
+                liq_big=big[2], liq_big_px=big[3], liq_big_side=big[1])
 
 
 def fetch():
@@ -99,9 +138,16 @@ def fetch():
     fng = get("https://api.alternative.me/fng/", {"limit": 1})["data"][0]
     fng_now = int(fng["value"])
 
+    # 爆仓（OKX 样本）：第三方接口挂了不影响其余渲染
+    try:
+        liq = fetch_okx_liq()
+    except Exception as e:  # noqa: BLE001
+        print(f"OKX 爆仓接口失败：{e}", file=sys.stderr)
+        liq = dict(liq_ok=False, liq_n=0, liq_long=0.0, liq_short=0.0, liq_big=0.0, liq_big_px=0.0, liq_big_side="")
+
     return dict(price=price, funding=funding, sma30=sma30, ma200=ma200, res60=res60, sup30=sup30,
                 ath=ath, ath_dt=ath_dt, low=low, low_dt=low_dt, weekly_break=weekly_break,
-                oi60=oi60, ls_ratio=ls_ratio, ls_long=buy * 100, fng=fng_now)
+                oi60=oi60, ls_ratio=ls_ratio, ls_long=buy * 100, fng=fng_now, **liq)
 
 
 def load_history():
@@ -161,6 +207,37 @@ def build(live, data, history):
                                  ("t-good", "杠杆在退出") if live["oi60"] < -10 else ("", "持平"))
     dd = abs(pct(live["price"], live["ath"]))
     v["dd_note"] = "异常浅" if dd < 65 else "接近历史"
+
+    # 爆仓（OKX 样本）：多/空方向 + 与 7 日均值比；均值要攒够 3 天才显示
+    L, S = live["liq_long"], live["liq_short"]
+    total = L + S
+    lh = history.setdefault("liq", {})
+    if live["liq_ok"]:
+        lh[today] = round(total)
+    prev = [lh[d] for d in sorted(lh) if d < today][-7:]
+    liq_avg = sum(prev) / len(prev) if len(prev) >= 3 else None
+    live["liq_avg"] = liq_avg
+    v["liq_long"], v["liq_short"] = usd_m(L), usd_m(S)
+    v["liq_avg_num"] = f"{liq_avg:.0f}" if liq_avg else "0"
+    if not live["liq_ok"]:
+        v["liq_cls"], v["liq_note"] = "", "OKX 接口暂时拉不到，等实时层补"
+    elif L > 2 * S:
+        v["liq_cls"], v["liq_note"] = "t-bad", f"多头被杀：下跌中杠杆在清，阶段②③的特征（24h {live['liq_n']} 笔）"
+    elif S > 2 * L:
+        v["liq_cls"], v["liq_note"] = "t-good", f"空头被轧：反弹逼空，筑底期常见（24h {live['liq_n']} 笔）"
+    else:
+        v["liq_cls"], v["liq_note"] = "", f"多空均衡，无单边清算（24h {live['liq_n']} 笔）"
+    v["liq_big"] = usd_m(live["liq_big"]) if live["liq_big"] else "—"
+    v["liq_big_note"] = (("多单" if live["liq_big_side"] == "long" else "空单") + f" @ {k(live['liq_big_px'])}") if live["liq_big"] else ""
+    if liq_avg:
+        ratio = total / liq_avg
+        v["liq_avg"] = f"{ratio:.1f}×"
+        v["liq_avg_cls"], v["liq_avg_note"] = (
+            ("t-bad", f"爆仓潮，7 日均值 {usd_m(liq_avg)}") if ratio > 3 else
+            ("t-good", f"清淡，7 日均值 {usd_m(liq_avg)}") if ratio < 0.5 else
+            ("", f"正常，7 日均值 {usd_m(liq_avg)}"))
+    else:
+        v["liq_avg"], v["liq_avg_cls"], v["liq_avg_note"] = "—", "", f"均值积累中（{len(prev)}/3 天）"
 
     # 手动字段（文本内再做一次 $ 替换）
     sub = lambda s: Template(s).safe_substitute(v)
@@ -235,6 +312,10 @@ def alerts(live):
         out.append(f"ALERT 费率过热 {live['funding']:+.3f}%")
     if live["price"] < live["low"] * 1.02:
         out.append(f"ALERT 逼近本轮低点 {k(live['low'])}")
+    total = live["liq_long"] + live["liq_short"]
+    if live.get("liq_avg") and total > 3 * live["liq_avg"]:
+        side = "多头" if live["liq_long"] > live["liq_short"] else "空头"
+        out.append(f"ALERT 爆仓潮（OKX 样本）24h {usd_m(total)}，为 7 日均值 {usd_m(live['liq_avg'])} 的 {total / live['liq_avg']:.1f}×，{side}为主")
     return out
 
 
@@ -257,6 +338,7 @@ def main():
     print(f"价格 {v['price']} | 距高点 {v['chg_ath']} | 距低点 {v['chg_low']} | 第 {v['months']} 个月")
     print(f"费率 {v['funding']} | 多空比 {v['ls_ratio']} | OI60 {v['oi60']} | 恐贪 {v['fng']}")
     print(f"阻力 {v['res_k']} | SMA30 {v['sma30_k']} | 支撑 {v['sup_k']} | MA200 {v['ma200_k']}")
+    print(f"爆仓 24h（OKX）多 {v['liq_long']} | 空 {v['liq_short']} | 最大 {v['liq_big']} | {v['liq_avg_note']}")
     a = alerts(live)
     print("\n".join(a) if a else "无 ALERT")
     return 0

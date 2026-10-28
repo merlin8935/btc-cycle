@@ -89,6 +89,10 @@ details p{margin:8px 0 0;font-size:14px;color:var(--muted)}
 .kv .s{font-size:12px;color:var(--muted);margin-top:2px}
 .t-good{color:var(--good)}.t-bad{color:var(--bad)}.t-warn{color:var(--warn)}
 
+/* 爆仓实时流 */
+.feed{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted);line-height:1.5}
+.feed b.l{color:var(--bad)}.feed b.s{color:var(--good)}
+
 /* 价位梯 */
 .ladder{list-style:none;margin:0;padding:0}
 .ladder li{display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);align-items:baseline}
@@ -192,6 +196,18 @@ $check_rows
 </section>
 
 <section class="card">
+  <h2>爆仓 <span class="score">OKX 永续样本 · 24h</span></h2>
+  <div class="kv">
+    <div><div class="k">多单爆仓（跌）</div><div class="v num t-bad" id="liq_long">$liq_long</div><div class="s">下跌时被强平</div></div>
+    <div><div class="k">空单爆仓（涨）</div><div class="v num t-good" id="liq_short">$liq_short</div><div class="s">反弹时被逼空</div></div>
+    <div><div class="k">最大单笔</div><div class="v num" id="liq_big">$liq_big</div><div class="s" id="liq_big_note">$liq_big_note</div></div>
+    <div><div class="k">对比 7 日均值</div><div class="v num $liq_avg_cls" id="liq_avg">$liq_avg</div><div class="s" id="liq_avg_note">$liq_avg_note</div></div>
+  </div>
+  <p class="clock-note $liq_cls" id="liq_note">$liq_note</p>
+  <div class="feed" id="liq_feed">实时爆仓流（Bybit + Binance）连接中…</div>
+</section>
+
+<section class="card">
   <h2>关键价位</h2>
   <ul class="ladder" id="ladder">
 $ladder_rows
@@ -223,7 +239,7 @@ $action_rows
 </div>
 
 <footer>
-  <p><b>自动部分：</b>价格、高低点、回撤、费率、多空比、OI、恐贪、均线、价位梯（Bybit / alternative.me，每日拉取）。<b>手动部分：</b>ETF、联储、鲸鱼、判断与情景（由 Claude 每日复核，标注数据日期）。</p>
+  <p><b>自动部分：</b>价格、高低点、回撤、费率、多空比、OI、恐贪、均线、价位梯、爆仓（Bybit / alternative.me / OKX，每日拉取；爆仓为 OKX 单所样本，非全市场）。<b>手动部分：</b>ETF、联储、鲸鱼、判断与情景（由 Claude 每日复核，标注数据日期）。</p>
   $footer_notes
   <p><b>风险提示：</b>周期模板只有 4 个样本，本轮回撤已浅于历史，模板可能正在失效。以上非投资建议，合约请控制仓位、设好止损。</p>
 </footer>
@@ -335,7 +351,96 @@ $action_rows
       .then(function(j){ setText("fng", j.data[0].value); }).catch(function(){});
   }
 
+  /* 爆仓层：OKX 公开接口允许跨域，页面自己算 24h 多/空，10 分钟刷一次；
+     Bybit + Binance WebSocket 推实时爆仓单，页面打开期间累计。 */
+  var OKX = "https://www.okx.com/api/v5/public/liquidation-orders?instType=SWAP&state=filled&limit=100&uly=";
+  var LIQ_AVG = $liq_avg_num;   /* 7 日均值（美元），不足 3 天为 0 */
+  var m = function(x){ return x >= 1e9 ? "$$" + (x/1e9).toFixed(2) + "B" : x >= 1e6 ? "$$" + (x/1e6).toFixed(1) + "M" : "$$" + (x/1e3).toFixed(0) + "K"; };
+
+  function okxPages(uly, perContract, cutoff, after, acc, depth){
+    return fetch(OKX + uly + (after ? "&after=" + after : "")).then(function(r){ return r.json(); }).then(function(j){
+      var d = (j.data && j.data[0] && j.data[0].details) || [];
+      var oldest = Infinity;
+      d.forEach(function(x){
+        var ts = +x.ts, px = +x.bkPx, sz = +x.sz, usd = perContract ? sz * perContract : sz * 0.01 * px;
+        if (ts < oldest) oldest = ts;
+        if (ts >= cutoff) acc.push([ts, x.posSide, usd, px]);
+      });
+      if (d.length < 100 || oldest < cutoff || depth >= 30) return acc;
+      return okxPages(uly, perContract, cutoff, oldest, acc, depth + 1);
+    });
+  }
+  function loadLiq(){
+    var cutoff = Date.now() - 86400000, acc = [];
+    return okxPages("BTC-USDT", 0, cutoff, null, acc, 0)
+      .then(function(){ return okxPages("BTC-USD", 100, cutoff, null, acc, 0); })
+      .then(function(rows){
+        var L = 0, S = 0, big = null;
+        rows.forEach(function(r){ if (r[1] === "long") L += r[2]; else S += r[2]; if (!big || r[2] > big[2]) big = r; });
+        setText("liq_long", m(L)); setText("liq_short", m(S));
+        if (big){ setText("liq_big", m(big[2])); setText("liq_big_note", (big[1] === "long" ? "多单 @ " : "空单 @ ") + k(big[3])); }
+        var note = byId("liq_note");
+        if (note){
+          note.className = "clock-note " + (L > 2*S ? "t-bad" : S > 2*L ? "t-good" : "");
+          note.textContent = (L > 2*S ? "多头被杀：下跌中杠杆在清，阶段②③的特征" : S > 2*L ? "空头被轧：反弹逼空，筑底期常见" : "多空均衡，无单边清算") + "（24h " + rows.length + " 笔）";
+        }
+        if (LIQ_AVG > 0){
+          var ratio = (L + S) / LIQ_AVG, av = byId("liq_avg");
+          setText("liq_avg", ratio.toFixed(1) + "×");
+          if (av) av.className = "v num " + (ratio > 3 ? "t-bad" : ratio < 0.5 ? "t-good" : "");
+          setText("liq_avg_note", (ratio > 3 ? "爆仓潮" : ratio < 0.5 ? "清淡" : "正常") + "，7 日均值 " + m(LIQ_AVG));
+        }
+      }).catch(function(){});
+  }
+
+  var feed = byId("liq_feed"), feedLong = 0, feedShort = 0, feedN = 0, wsOpen = false;
+  function wsReady(){ wsOpen = true; if (!feedN) feed.textContent = "实时爆仓流已连上（Bybit + Binance），等待下一笔…"; }
+  function onLiq(src, side, qty, px){
+    /* side = 被强平的持仓方向 */
+    var usd = qty * px; feedN++; if (side === "long") feedLong += usd; else feedShort += usd;
+    var t = new Date(), hh = ("0"+t.getHours()).slice(-2) + ":" + ("0"+t.getMinutes()).slice(-2) + ":" + ("0"+t.getSeconds()).slice(-2);
+    feed.textContent = "";
+    var a = document.createElement("div");
+    a.appendChild(document.createTextNode("最近 " + hh + " " + src + " "));
+    var b = document.createElement("b"); b.className = side === "long" ? "l" : "s";
+    b.textContent = (side === "long" ? "多单爆 " : "空单爆 ") + m(usd); a.appendChild(b);
+    a.appendChild(document.createTextNode(" @ " + k(px)));
+    var c = document.createElement("div");
+    c.textContent = "开页以来 " + feedN + " 笔：多 " + m(feedLong) + " / 空 " + m(feedShort);
+    feed.appendChild(a); feed.appendChild(c);
+  }
+  function wsBybit(){
+    try {
+      var ws = new WebSocket("wss://stream.bybit.com/v5/public/linear");
+      ws.onopen = function(){ wsReady(); ws.send(JSON.stringify({op:"subscribe", args:["allLiquidation.BTCUSDT"]})); };
+      ws.onmessage = function(e){
+        var j = JSON.parse(e.data); if (!j.data) return;
+        /* Bybit 文档：S=Buy 表示多头仓位被强平 */
+        j.data.forEach(function(x){ onLiq("Bybit", x.S === "Buy" ? "long" : "short", +x.v, +x.p); });
+      };
+      ws.onclose = function(){ setTimeout(wsBybit, 5000); };
+      setInterval(function(){ if (ws.readyState === 1) ws.send(JSON.stringify({op:"ping"})); }, 20000);
+    } catch(e){}
+  }
+  function wsBinance(){
+    try {
+      var ws = new WebSocket("wss://fstream.binance.com/ws/btcusdt@forceOrder");
+      ws.onopen = wsReady;
+      ws.onmessage = function(e){
+        var o = JSON.parse(e.data).o; if (!o) return;
+        /* Binance：强平单 SELL 表示多头仓位被强平 */
+        onLiq("Binance", o.S === "SELL" ? "long" : "short", +o.q, +o.ap);
+      };
+      ws.onclose = function(){ setTimeout(wsBinance, 5000); };
+    } catch(e){}
+  }
+
   loadSlow().then(tick, function(){ tick(); });
+  loadLiq(); setInterval(loadLiq, 600000);
+  if (feed && window.WebSocket){
+    wsBybit(); wsBinance();
+    setTimeout(function(){ if (!wsOpen) feed.textContent = "实时爆仓流在此环境不可用（github.io 版支持）；上方 24h 数据每 10 分钟刷新。"; }, 15000);
+  }
   loadFng();
   setInterval(tick, 10000);
   setInterval(function(){ loadSlow().catch(function(){}); }, 600000);
