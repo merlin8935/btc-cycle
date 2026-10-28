@@ -49,6 +49,7 @@ h1{font-size:26px;margin:2px 0 4px;line-height:1.2;text-wrap:balance}
 @media (min-width:700px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.span2{grid-column:1/-1}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
 .card h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:600}
+.card h2.mt{margin-top:14px}
 
 /* 结论卡 */
 .verdict{border-left:5px solid var(--accent)}
@@ -202,8 +203,17 @@ $check_rows
     <div><div class="k">空单爆仓（涨）</div><div class="v num t-good" id="liq_short">$liq_short</div><div class="s">反弹时被逼空</div></div>
     <div><div class="k">最大单笔</div><div class="v num" id="liq_big">$liq_big</div><div class="s" id="liq_big_note">$liq_big_note</div></div>
     <div><div class="k">对比 7 日均值</div><div class="v num $liq_avg_cls" id="liq_avg">$liq_avg</div><div class="s" id="liq_avg_note">$liq_avg_note</div></div>
+    <div><div class="k">多单爆仓区间</div><div class="v num t-bad" id="liq_long_rng">$liq_long_rng</div><div class="s" id="liq_long_rng_note">$liq_long_rng_note</div></div>
+    <div><div class="k">空单爆仓区间</div><div class="v num t-good" id="liq_short_rng">$liq_short_rng</div><div class="s" id="liq_short_rng_note">$liq_short_rng_note</div></div>
   </div>
   <p class="clock-note $liq_cls" id="liq_note">$liq_note</p>
+  <h2 class="mt">多空比例 <span class="score">Binance 永续 · 1h 快照</span></h2>
+  <div class="kv">
+    <div><div class="k">账户多空（散户）</div><div class="v num" id="bn_long">$bn_long</div><div class="s $bn_cls" id="bn_long_note">$bn_long_note</div></div>
+    <div><div class="k">大户持仓多空</div><div class="v num" id="top_long">$top_long</div><div class="s $top_cls" id="top_long_note">$top_long_note</div></div>
+    <div><div class="k">主动买卖比（24h）</div><div class="v num" id="taker">$taker</div><div class="s $taker_cls" id="taker_note">$taker_note</div></div>
+    <div><div class="k">大户 − 散户</div><div class="v num" id="gap">$gap</div><div class="s $gap_cls" id="gap_note">$gap_note</div></div>
+  </div>
   <div class="feed" id="liq_feed">实时爆仓流（Bybit + Binance）连接中…</div>
 </section>
 
@@ -263,6 +273,7 @@ $action_rows
       .then(function(j){ if (j.retCode !== 0) throw new Error(j.retMsg); return j.result.list; });
   };
   var slow = null;   /* 均线、高低点等慢变量，10 分钟刷一次 */
+  var lastPrice = 0; /* 最近一次实时价，给爆仓区间算距离用 */
 
   function loadSlow(){
     return Promise.all([
@@ -325,6 +336,7 @@ $action_rows
   function tick(){
     get("tickers?").then(function(list){
       var t = list[0], price = +t.lastPrice, f = +t.fundingRate * 100;
+      lastPrice = price;
       setText("price", "$$" + Math.round(price).toLocaleString("en-US"));
       setText("funding", signed(f, 3));
       var fn = byId("funding_note");
@@ -379,6 +391,23 @@ $action_rows
         rows.forEach(function(r){ if (r[1] === "long") L += r[2]; else S += r[2]; if (!big || r[2] > big[2]) big = r; });
         setText("liq_long", m(L)); setText("liq_short", m(S));
         if (big){ setText("liq_big", m(big[2])); setText("liq_big_note", (big[1] === "long" ? "多单 @ " : "空单 @ ") + k(big[3])); }
+        /* 各方向爆仓价位区间 + 按美元加权最密的 200 美元档 */
+        var rng = function(side){
+          var lo = Infinity, hi = 0, w = {}, best = null;
+          rows.forEach(function(r){
+            if (r[1] !== side) return;
+            if (r[3] < lo) lo = r[3]; if (r[3] > hi) hi = r[3];
+            var b = Math.floor(r[3] / 200) * 200; w[b] = (w[b] || 0) + r[2];
+            if (best === null || w[b] > w[best]) best = b;
+          });
+          return hi ? [lo, hi, best + 100] : null;
+        };
+        [["long", "liq_long_rng"], ["short", "liq_short_rng"]].forEach(function(p){
+          var r = rng(p[0]);
+          if (!r){ setText(p[1], "—"); setText(p[1] + "_note", "24h 无"); return; }
+          setText(p[1], k(r[0]) === k(r[1]) ? k(r[0]) : k(r[0]) + "–" + k(r[1]));
+          setText(p[1] + "_note", "最密 " + k(r[2]) + (lastPrice ? "，距现价 " + signed(pct(r[2], lastPrice), 1) : ""));
+        });
         var note = byId("liq_note");
         if (note){
           note.className = "clock-note " + (L > 2*S ? "t-bad" : S > 2*L ? "t-good" : "");
@@ -391,6 +420,26 @@ $action_rows
           setText("liq_avg_note", (ratio > 3 ? "爆仓潮" : ratio < 0.5 ? "清淡" : "正常") + "，7 日均值 " + m(LIQ_AVG));
         }
       }).catch(function(){});
+  }
+
+  /* 多空比例（Binance 公开接口，允许跨域） */
+  var BN = "https://fapi.binance.com/futures/data/";
+  function loadLS(){
+    var j = function(u){ return fetch(BN + u).then(function(r){ return r.json(); }); };
+    return Promise.all([
+      j("globalLongShortAccountRatio?symbol=BTCUSDT&period=1h&limit=1"),
+      j("topLongShortPositionRatio?symbol=BTCUSDT&period=1h&limit=1"),
+      j("takerlongshortRatio?symbol=BTCUSDT&period=1h&limit=24")
+    ]).then(function(res){
+      var bl = +res[0][0].longAccount * 100, tl = +res[1][0].longAccount * 100;
+      var buy = 0, sell = 0; res[2].forEach(function(x){ buy += +x.buyVol; sell += +x.sellVol; });
+      var tk = sell ? buy / sell : 1, gap = tl - bl;
+      var put = function(id, val, cls, note){ setText(id, val); var n = byId(id + "_note"); if (n){ n.className = "s " + cls; n.textContent = note; } };
+      put("bn_long", bl.toFixed(0) + "% 多", bl > 60 ? "t-bad" : bl < 40 ? "t-good" : "", bl > 60 ? "散户一边倒做多，易被杀多" : bl < 40 ? "散户偏空，易被逼空" : "均衡");
+      put("top_long", tl.toFixed(0) + "% 多", tl > 60 ? "t-warn" : tl < 40 ? "t-good" : "", tl > 60 ? "大户持仓也偏多" : tl < 40 ? "大户偏空" : "大户均衡");
+      put("taker", tk.toFixed(2), tk > 1.2 ? "t-good" : tk < 0.83 ? "t-bad" : "", tk > 1.2 ? "主动买盘主导" : tk < 0.83 ? "主动卖盘主导" : "买卖均衡");
+      put("gap", (gap < 0 ? "−" : "+") + Math.abs(gap).toFixed(0) + "pp", gap > 5 ? "t-good" : gap < -5 ? "t-bad" : "", gap > 5 ? "大户比散户更多头" : gap < -5 ? "大户比散户谨慎，散户多头孤立" : "大户与散户看法一致");
+    }).catch(function(){});
   }
 
   var feed = byId("liq_feed"), feedLong = 0, feedShort = 0, feedN = 0, wsOpen = false;
@@ -436,7 +485,7 @@ $action_rows
   }
 
   loadSlow().then(tick, function(){ tick(); });
-  loadLiq(); setInterval(loadLiq, 600000);
+  loadLiq(); loadLS(); setInterval(function(){ loadLiq(); loadLS(); }, 600000);
   if (feed && window.WebSocket){
     wsBybit(); wsBinance();
     setTimeout(function(){ if (!wsOpen) feed.textContent = "实时爆仓流在此环境不可用（github.io 版支持）；上方 24h 数据每 10 分钟刷新。"; }, 15000);

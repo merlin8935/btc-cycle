@@ -93,10 +93,35 @@ def fetch_okx_liq(hours=24):
                 break
             after = oldest
     big = max(rows, key=lambda r: r[2]) if rows else (0, "", 0.0, 0.0)
+
+    def rng(side):
+        """该方向 24h 爆仓价位区间 (最低, 最高, 最密 $200 档中心)，按美元加权"""
+        px = [p for _, s, _, p in rows if s == side]
+        if not px:
+            return None
+        w = {}
+        for _, s, u, p in rows:
+            if s == side:
+                b = int(p // 200) * 200
+                w[b] = w.get(b, 0) + u
+        return (min(px), max(px), max(w, key=w.get) + 100)
+
     return dict(liq_ok=True, liq_n=len(rows),
                 liq_long=sum(u for _, s, u, _ in rows if s == "long"),
                 liq_short=sum(u for _, s, u, _ in rows if s == "short"),
-                liq_big=big[2], liq_big_px=big[3], liq_big_side=big[1])
+                liq_big=big[2], liq_big_px=big[3], liq_big_side=big[1],
+                liq_long_rng=rng("long"), liq_short_rng=rng("short"))
+
+
+def binance_ls():
+    """Binance USDT 永续：全体账户多空、大户持仓多空（最近 1h），主动买卖量比（24h 合计）。"""
+    base = "https://fapi.binance.com/futures/data/"
+    g = get(base + "globalLongShortAccountRatio", dict(symbol="BTCUSDT", period="1h", limit=1))[0]
+    t = get(base + "topLongShortPositionRatio", dict(symbol="BTCUSDT", period="1h", limit=1))[0]
+    tk = get(base + "takerlongshortRatio", dict(symbol="BTCUSDT", period="1h", limit=24))
+    buy, sell = sum(float(x["buyVol"]) for x in tk), sum(float(x["sellVol"]) for x in tk)
+    return dict(bn_ok=True, bn_long=float(g["longAccount"]) * 100, top_long=float(t["longAccount"]) * 100,
+                taker=buy / sell if sell else 1.0)
 
 
 def fetch():
@@ -143,11 +168,17 @@ def fetch():
         liq = fetch_okx_liq()
     except Exception as e:  # noqa: BLE001
         print(f"OKX 爆仓接口失败：{e}", file=sys.stderr)
-        liq = dict(liq_ok=False, liq_n=0, liq_long=0.0, liq_short=0.0, liq_big=0.0, liq_big_px=0.0, liq_big_side="")
+        liq = dict(liq_ok=False, liq_n=0, liq_long=0.0, liq_short=0.0, liq_big=0.0, liq_big_px=0.0, liq_big_side="",
+                   liq_long_rng=None, liq_short_rng=None)
+    try:
+        bn = binance_ls()
+    except Exception as e:  # noqa: BLE001
+        print(f"Binance 多空接口失败：{e}", file=sys.stderr)
+        bn = dict(bn_ok=False, bn_long=0.0, top_long=0.0, taker=1.0)
 
     return dict(price=price, funding=funding, sma30=sma30, ma200=ma200, res60=res60, sup30=sup30,
                 ath=ath, ath_dt=ath_dt, low=low, low_dt=low_dt, weekly_break=weekly_break,
-                oi60=oi60, ls_ratio=ls_ratio, ls_long=buy * 100, fng=fng_now, **liq)
+                oi60=oi60, ls_ratio=ls_ratio, ls_long=buy * 100, fng=fng_now, **liq, **bn)
 
 
 def load_history():
@@ -238,6 +269,34 @@ def build(live, data, history):
             ("", f"正常，7 日均值 {usd_m(liq_avg)}"))
     else:
         v["liq_avg"], v["liq_avg_cls"], v["liq_avg_note"] = "—", "", f"均值积累中（{len(prev)}/3 天）"
+    for key in ("liq_long_rng", "liq_short_rng"):
+        r = live[key]
+        if not r:
+            v[key], v[key + "_note"] = "—", "24h 无"
+        else:
+            v[key] = k(r[0]) if k(r[0]) == k(r[1]) else f"{k(r[0])}–{k(r[1])}"
+            v[key + "_note"] = f"最密 {k(r[2])}，距现价 {pct(r[2], live['price']):+.1f}%".replace("-", "−")
+
+    # 多空比例（Binance）：账户 / 大户持仓 / 主动成交 / 大户与散户分歧
+    if live["bn_ok"]:
+        bl, tl, tk = live["bn_long"], live["top_long"], live["taker"]
+        gap = tl - bl
+        v["bn_long"] = f"{bl:.0f}% 多"
+        v["bn_cls"], v["bn_long_note"] = (("t-bad", "散户一边倒做多，易被杀多") if bl > 60 else
+                                         ("t-good", "散户偏空，易被逼空") if bl < 40 else ("", "均衡"))
+        v["top_long"] = f"{tl:.0f}% 多"
+        v["top_cls"], v["top_long_note"] = (("t-warn", "大户持仓也偏多") if tl > 60 else
+                                           ("t-good", "大户偏空") if tl < 40 else ("", "大户均衡"))
+        v["taker"] = f"{tk:.2f}"
+        v["taker_cls"], v["taker_note"] = (("t-good", "主动买盘主导") if tk > 1.2 else
+                                          ("t-bad", "主动卖盘主导") if tk < 0.83 else ("", "买卖均衡"))
+        v["gap"] = f"{gap:+.0f}pp".replace("-", "−")
+        v["gap_cls"], v["gap_note"] = (("t-good", "大户比散户更多头") if gap > 5 else
+                                      ("t-bad", "大户比散户谨慎，散户多头孤立") if gap < -5 else ("", "大户与散户看法一致"))
+    else:
+        for key in ("bn_long", "top_long", "taker", "gap"):
+            v[key], v[key + "_note"] = "—", "Binance 接口暂不可用"
+        v["bn_cls"] = v["top_cls"] = v["taker_cls"] = v["gap_cls"] = ""
 
     # 手动字段（文本内再做一次 $ 替换）
     sub = lambda s: Template(s).safe_substitute(v)
@@ -339,6 +398,7 @@ def main():
     print(f"费率 {v['funding']} | 多空比 {v['ls_ratio']} | OI60 {v['oi60']} | 恐贪 {v['fng']}")
     print(f"阻力 {v['res_k']} | SMA30 {v['sma30_k']} | 支撑 {v['sup_k']} | MA200 {v['ma200_k']}")
     print(f"爆仓 24h（OKX）多 {v['liq_long']} | 空 {v['liq_short']} | 最大 {v['liq_big']} | {v['liq_avg_note']}")
+    print(f"爆仓区间 多 {v['liq_long_rng']} | 空 {v['liq_short_rng']} | Binance 账户 {v['bn_long']} | 大户 {v['top_long']} | 主动买卖 {v['taker']}")
     a = alerts(live)
     print("\n".join(a) if a else "无 ALERT")
     return 0
