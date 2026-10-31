@@ -136,7 +136,7 @@ footer a{color:var(--accent)}
 <header>
   <div class="eyebrow">Bitcoin · 周期定位</div>
   <h1>熊市第 12 个月，筑底期</h1>
-  <div class="asof"><span class="dot" id="dot"></span><span id="asof">快照 2026-10-30 08:38（吉隆坡）</span> · Bybit 永续 · 判断每日 08:38 复核</div>
+  <div class="asof"><span class="dot" id="dot"></span><span id="asof">快照 2026-10-31 08:38（吉隆坡）</span> · Bybit 永续 · 判断每日 08:38 复核</div>
 </header>
 
 <div class="grid">
@@ -145,7 +145,7 @@ footer a{color:var(--accent)}
   <p class="big">该跌的跌完大半，该涨的还没来。</p>
   <p class="sub">已跌破 30 日低点，第三腿风险上升。底部区域大概率已在 57.8k 出现（2 月 / 6 月两次在 58–60k 止跌），但牛市启动条件还差两个：联储没转松、没有新买家。</p>
   <div class="price">
-    <span class="p num" id="price">$77,336</span>
+    <span class="p num" id="price">$77,298</span>
     <span class="d">距高点 <b class="num t-bad" id="chg_ath">−39%</b>（<span id="ath_k">126.2k</span>，<span id="ath_ym">2025-10</span>）</span>
     <span class="d">距低点 <b class="num t-good" id="chg_low">+34%</b>（<span id="low_k">57.8k</span>，<span id="low_ym">2026-06</span>）</span>
   </div>
@@ -167,7 +167,7 @@ footer a{color:var(--accent)}
 <section class="card">
   <h2>牛市四条件 <span class="score">1 / 4</span></h2>
   <ul class="list">
-    <li class="row"><span class="chip ok">满足</span><div><b>杠杆清干净</b><small>费率 -0.000%，Strategy 跌 75% 已卖币</small></div></li>
+    <li class="row"><span class="chip ok">满足</span><div><b>杠杆清干净</b><small>费率 +0.005%，Strategy 跌 75% 已卖币</small></div></li>
     <li class="row"><span class="chip no">未满足</span><div><b>联储转松</b><small>3.75–4.00%，CPI ~4.1%，10-28 市场押维持，OIS 加息概率 9.6%（10-25），12-09 加息预期升温</small></div></li>
     <li class="row"><span class="chip half">等待</span><div><b>减半窗口</b><small>2028-04，还有 18 个月</small></div></li>
     <li class="row"><span class="chip no">未满足</span><div><b>新的边际买家</b><small>ETF 是上一轮渠道，流向反复摇摆</small></div></li>
@@ -192,8 +192,8 @@ footer a{color:var(--accent)}
 <section class="card">
   <h2>关键数据</h2>
   <div class="kv">
-    <div><div class="k">资金费率</div><div class="v num" id="funding">-0.000%</div><div class="s t-good" id="funding_note">中性，杠杆已清</div></div>
-    <div><div class="k">多空比（Bybit）</div><div class="v num" id="ls_ratio">1.98</div><div class="s t-bad" id="ls_note">66% 散户做多，拥挤</div></div>
+    <div><div class="k">资金费率</div><div class="v num" id="funding">+0.005%</div><div class="s t-good" id="funding_note">中性，杠杆已清</div></div>
+    <div><div class="k">多空比（Bybit）</div><div class="v num" id="ls_ratio">2.33</div><div class="s t-bad" id="ls_note">70% 散户做多，拥挤</div></div>
     <div><div class="k">ETF 净流向 <span class="num">10-22～23</span></div><div class="v num t-bad">−$7.7 亿</div><div class="s">前三日曾 +$10.7 亿（Farside）</div></div>
     <div><div class="k">联储利率</div><div class="v num">3.75–4.00%</div><div class="s t-bad">CPI ~4.1%，10-28 市场押维持，OIS 加息概率 9.6%（10-25），12-09 加息预期升温</div></div>
     <div><div class="k">恐惧贪婪</div><div class="v num" id="fng">30</div><div class="s">6 月极度恐惧时曾 8–12</div></div>
@@ -206,20 +206,20 @@ footer a{color:var(--accent)}
 <section class="card">
   <h2>爆仓 <span class="score">OKX 永续样本 · 24h</span></h2>
   <div class="kv">
-    <div><div class="k">多单爆仓（跌）</div><div class="v num t-bad" id="liq_long">$51.0M</div><div class="s">下跌时被强平</div></div>
-    <div><div class="k">空单爆仓（涨）</div><div class="v num t-good" id="liq_short">$2.1M</div><div class="s">反弹时被逼空</div></div>
-    <div><div class="k">最大单笔</div><div class="v num" id="liq_big">$6.4M</div><div class="s" id="liq_big_note">多单 @ 77.2k</div></div>
-    <div><div class="k">对比 7 日均值</div><div class="v num " id="liq_avg">—</div><div class="s" id="liq_avg_note">均值积累中（2/3 天）</div></div>
-    <div><div class="k">多单爆仓区间</div><div class="v num t-bad" id="liq_long_rng">76.6k–80.8k</div><div class="s" id="liq_long_rng_note">最密 77.3k，距现价 −0.0%</div></div>
-    <div><div class="k">空单爆仓区间</div><div class="v num t-good" id="liq_short_rng">77.2k–81.8k</div><div class="s" id="liq_short_rng_note">最密 78.9k，距现价 +2.0%</div></div>
+    <div><div class="k">多单爆仓（跌）</div><div class="v num t-bad" id="liq_long">$19.4M</div><div class="s">下跌时被强平</div></div>
+    <div><div class="k">空单爆仓（涨）</div><div class="v num t-good" id="liq_short">$5.8M</div><div class="s">反弹时被逼空</div></div>
+    <div><div class="k">最大单笔</div><div class="v num" id="liq_big">$781K</div><div class="s" id="liq_big_note">多单 @ 78.1k</div></div>
+    <div><div class="k">对比 7 日均值</div><div class="v num " id="liq_avg">1.1×</div><div class="s" id="liq_avg_note">正常，7 日均值 $23.6M</div></div>
+    <div><div class="k">多单爆仓区间</div><div class="v num t-bad" id="liq_long_rng">76.2k–78.5k</div><div class="s" id="liq_long_rng_note">最密 76.7k，距现价 −0.8%</div></div>
+    <div><div class="k">空单爆仓区间</div><div class="v num t-good" id="liq_short_rng">76.7k–78.8k</div><div class="s" id="liq_short_rng_note">最密 77.1k，距现价 −0.3%</div></div>
   </div>
-  <p class="clock-note t-bad" id="liq_note">多头被杀：下跌中杠杆在清，阶段②③的特征（24h 3171 笔）</p>
+  <p class="clock-note t-bad" id="liq_note">多头被杀：下跌中杠杆在清，阶段②③的特征（24h 3038 笔）</p>
   <h2 class="mt">多空比例 <span class="score">Binance 永续 · 1h 快照</span></h2>
   <div class="kv">
-    <div><div class="k">账户多空（散户）</div><div class="v num" id="bn_long">70% 多</div><div class="s t-bad" id="bn_long_note">散户一边倒做多，易被杀多</div></div>
-    <div><div class="k">大户持仓多空</div><div class="v num" id="top_long">66% 多</div><div class="s t-warn" id="top_long_note">大户持仓也偏多</div></div>
-    <div><div class="k">主动买卖比（24h）</div><div class="v num" id="taker">0.92</div><div class="s " id="taker_note">买卖均衡</div></div>
-    <div><div class="k">大户 − 散户</div><div class="v num" id="gap">−5pp</div><div class="s " id="gap_note">大户与散户看法一致</div></div>
+    <div><div class="k">账户多空（散户）</div><div class="v num" id="bn_long">74% 多</div><div class="s t-bad" id="bn_long_note">散户一边倒做多，易被杀多</div></div>
+    <div><div class="k">大户持仓多空</div><div class="v num" id="top_long">64% 多</div><div class="s t-warn" id="top_long_note">大户持仓也偏多</div></div>
+    <div><div class="k">主动买卖比（24h）</div><div class="v num" id="taker">0.94</div><div class="s " id="taker_note">买卖均衡</div></div>
+    <div><div class="k">大户 − 散户</div><div class="v num" id="gap">−10pp</div><div class="s t-bad" id="gap_note">大户比散户谨慎，散户多头孤立</div></div>
   </div>
   <div class="feed" id="liq_feed">实时爆仓流（Bybit + Binance）连接中…</div>
 </section>
@@ -229,9 +229,9 @@ footer a{color:var(--accent)}
   <ul class="ladder" id="ladder">
     <li><span class="lv num">87.4k</span><span class="tag">60 日高点 <small>周线站上 = 趋势反转</small></span></li>
     <li><span class="lv num">85.3k</span><span class="tag">次级阻力</span></li>
-    <li><span class="lv num">82.3k</span><span class="tag">30 日均线</span></li>
-    <li><span class="lv num">77.9k</span><span class="tag">生死线 <small>30 日低点，破了别抄底</small></span></li>
+    <li><span class="lv num">82.1k</span><span class="tag">30 日均线</span></li>
     <li class="now"><span class="lv num">77.3k</span><span class="tag">现价 <small>箱体中轴，赔率最差</small></span></li>
+    <li><span class="lv num">76.2k</span><span class="tag">生死线 <small>30 日低点，破了别抄底</small></span></li>
     <li><span class="lv num">73.1k</span><span class="tag">200 日均线</span></li>
     <li><span class="lv num">59.9k</span><span class="tag">2 月低点 <small>与 6 月 57.8k 构成双底</small></span></li>
     <li><span class="lv num">53–58k</span><span class="tag">第三腿目标 <small>Grayscale 58k / KuCoin 53–55k</small></span></li>
@@ -241,8 +241,8 @@ footer a{color:var(--accent)}
 <section class="card">
   <h2>三个情景</h2>
   <div class="sc">
-    <div><div class="head"><span>箱体筑底</span><span class="num">35%</span></div><div class="meter "><i style="width:35%"></i></div><p>10-28 维持不变、口风偏鹰但不加。77.9k 守住，70–90k 磨到 2027-Q1，6 月低点 57.8k 就是底。</p></div>
-    <div><div class="head"><span>第三腿下跌</span><span class="num">45%</span></div><div class="meter bad"><i style="width:45%"></i></div><p>10-28 或 12-09 意外加息、或 ETF 持续流出。破 77.9k → 73.1k → 再测 57.8k，可能到 53–56k 补足历史回撤。</p></div>
+    <div><div class="head"><span>箱体筑底</span><span class="num">35%</span></div><div class="meter "><i style="width:35%"></i></div><p>10-28 维持不变、口风偏鹰但不加。76.2k 守住，70–90k 磨到 2027-Q1，6 月低点 57.8k 就是底。</p></div>
+    <div><div class="head"><span>第三腿下跌</span><span class="num">45%</span></div><div class="meter bad"><i style="width:45%"></i></div><p>10-28 或 12-09 意外加息、或 ETF 持续流出。破 76.2k → 73.1k → 再测 57.8k，可能到 53–56k 补足历史回撤。</p></div>
     <div><div class="head"><span>提前转牛</span><span class="num">20%</span></div><div class="meter good"><i style="width:20%"></i></div><p>美伊缓和 → 油价跌 → CPI 回落 → 联储转向。直接站上 87.4k。</p></div>
   </div>
 </section>
@@ -252,7 +252,7 @@ footer a{color:var(--accent)}
   <ul class="act">
     <li><span class="n">1</span><span>已破位，不接刀，等 73.1k 或本轮低点 57.8k 的反应。</span></li>
     <li><span class="n">2</span><span>现货周期仓：等 <b class="num">60–72k</b> 分批，不是现在。</span></li>
-    <li><span class="n">3</span><span>合约只做箱体边缘：<b class="num">77.9k</b> 附近多 / <b class="num">85k–87.4k</b> 附近空。</span></li>
+    <li><span class="n">3</span><span>合约只做箱体边缘：<b class="num">76.2k</b> 附近多 / <b class="num">85k–87.4k</b> 附近空。</span></li>
     <li><span class="n">4</span><span>10-28 议息当天空仓。即使维持不变，发布会口风也能打 ±5%，拥挤多头最容易被打。</span></li>
     <li><span class="n">5</span><span>没出现「联储暂停 + 周线 >87.4k」前，所有反弹按熊市反弹处理。</span></li>
   </ul>
@@ -374,7 +374,7 @@ footer a{color:var(--accent)}
       dot.className = "dot live";
     }).catch(function(){
       dot.className = "dot err";
-      setText("asof", "实时连接失败，显示快照 2026-10-30 08:38");
+      setText("asof", "实时连接失败，显示快照 2026-10-31 08:38");
     });
   }
 
@@ -386,7 +386,7 @@ footer a{color:var(--accent)}
   /* 爆仓层：OKX 公开接口允许跨域，页面自己算 24h 多/空，10 分钟刷一次；
      Bybit + Binance WebSocket 推实时爆仓单，页面打开期间累计。 */
   var OKX = "https://www.okx.com/api/v5/public/liquidation-orders?instType=SWAP&state=filled&limit=100&uly=";
-  var LIQ_AVG = 0;   /* 7 日均值（美元），不足 3 天为 0 */
+  var LIQ_AVG = 23623446;   /* 7 日均值（美元），不足 3 天为 0 */
   var m = function(x){ return x >= 1e9 ? "$" + (x/1e9).toFixed(2) + "B" : x >= 1e6 ? "$" + (x/1e6).toFixed(1) + "M" : "$" + (x/1e3).toFixed(0) + "K"; };
 
   function okxPages(uly, perContract, cutoff, after, acc, depth){
