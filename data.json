@@ -24,8 +24,8 @@
     {"state": "no",   "label": "✗",   "title": "出现新叙事 / 新渠道",     "note": "主权储备？养老金？目前没看到"}
   ],
 
-  "etf": {"date": "10-22～23", "value": "−$7.7 亿", "cls": "t-bad", "note": "前三日曾 +$10.7 亿（Farside）"},
-  "fed": {"rate": "3.75–4.00%", "note": "CPI ~4.1%，10-28 市场押维持，OIS 加息概率 9.6%（10-25），12-09 加息预期升温"},
+  "etf": {"date": "10-30", "value": "−$6.4 亿", "cls": "t-bad", "note": "单日（Farside）；当周净流出 $2.0 亿，10 月净流出 $5.2 亿（24/7 Wall St. 10-31）"},
+  "fed": {"rate": "3.75–4.00%", "note": "10-28 维持，10–2 两票要加息；CPI 3.7%（9 月，10-14 公布）；12-09 加息概率 69%（RateWatch 10-30），10-28 FedWatch 曾 83%（Schwab）"},
   "whale": {"value": "+6 万 BTC", "note": "8 月底以来吸筹（CryptoQuant 10-25）"},
 
   "manual_levels": [
@@ -35,8 +35,8 @@
   ],
 
   "scenarios": [
-    {"name": "箱体筑底", "pct": 35, "cls": "",     "text": "10-28 维持不变、口风偏鹰但不加。$sup_k 守住，70–90k 磨到 2027-Q1，6 月低点 $low_k 就是底。"},
-    {"name": "第三腿下跌", "pct": 45, "cls": "bad",  "text": "10-28 或 12-09 意外加息、或 ETF 持续流出。破 $sup_k → $ma200_k → 再测 $low_k，可能到 53–56k 补足历史回撤。"},
+    {"name": "箱体筑底", "pct": 35, "cls": "",     "text": "12-09 不加，或加完不再放话继续加。$sup_k 守住，70–90k 磨到 2027-Q1，6 月低点 $low_k 就是底。"},
+    {"name": "第三腿下跌", "pct": 45, "cls": "bad",  "text": "12-09 加息且放话还要加、或 ETF 持续流出。破 $sup_k → $ma200_k → 再测 $low_k，可能到 53–56k 补足历史回撤。"},
     {"name": "提前转牛", "pct": 20, "cls": "good", "text": "美伊缓和 → 油价跌 → CPI 回落 → 联储转向。直接站上 $res_k。"}
   ],
 
@@ -44,11 +44,11 @@
     "已破位，不接刀，等 $ma200_k 或本轮低点 $low_k 的反应。",
     "现货周期仓：等 <b class=\"num\">60–72k</b> 分批，不是现在。",
     "合约只做箱体边缘：<b class=\"num\">$sup_k</b> 附近多 / <b class=\"num\">85k–$res_k</b> 附近空。",
-    "10-28 议息当天空仓。即使维持不变，发布会口风也能打 ±5%，拥挤多头最容易被打。",
+    "12-09 议息当天空仓。不管加不加，发布会口风都能打 ±5%，拥挤多头最容易被打。",
     "没出现「联储暂停 + 周线 >$res_k」前，所有反弹按熊市反弹处理。"
   ],
 
-  "event": {"date": "10·28", "text": "FOMC 议息。市场押维持不变（OIS 加息概率 9.6%，10-25）。看点是声明和发布会对 12-09 的暗示：若放话还要加，走情景 2；若暗示暂停，情景 1 / 3 概率上升。"},
+  "event": {"date": "12·09", "text": "FOMC 议息（附点阵图）。市场偏向加息（概率 69%，RateWatch 10-30）。看点是加不加和点阵图：若放话还要加，走情景 2；若不加或暗示到顶，情景 1 / 3 概率上升。"},
 
   "footer_notes": "<p><b>未核实项：</b>MVRV / 实现价格当前值没拿到可信数字（见 <a href=\"https://studio.glassnode.com/charts/70aa2400-53ee-4cb3-477e-b55793aa210a?a=BTC\">Glassnode</a>）；加息概率为 CME FedWatch 二手引用。</p><p><b>来源：</b>Bybit 行情 / 费率 / OI · alternative.me 恐贪 · <a href=\"https://fortune.com/2026/07/12/bitcoin-bear-market-three-drivers-rebound/\">Fortune 07-12</a> · <a href=\"https://www.analyticsinsight.net/news/bitcoin-price-holds-near-usd-80k-as-traders-await-upcoming-fed-rate-decision\">Analytics Insight 10-25</a>（引 Farside / CryptoQuant）· <a href=\"https://www.kucoin.com/blog/is-2026-btc-crypto-crash-different-will-it-recover\">KuCoin 06-15</a> · 历史周期为训练知识。</p>"
 }
