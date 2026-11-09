@@ -24,8 +24,8 @@
     {"state": "no",   "label": "✗",   "title": "出现新叙事 / 新渠道",     "note": "主权储备？养老金？目前没看到"}
   ],
 
-  "etf": {"date": "10-30", "value": "−$6.4 亿", "cls": "t-bad", "note": "单日（Farside）；当周净流出 $2.0 亿，10 月净流出 $5.2 亿（24/7 Wall St. 10-31）"},
-  "fed": {"rate": "3.75–4.00%", "note": "10-28 维持，10–2 两票要加息；CPI 3.7%（9 月，10-14 公布）；12-09 加息概率 69%（RateWatch 10-30），10-28 FedWatch 曾 83%（Schwab）"},
+  "etf": {"date": "11-06", "value": "−$4.1 亿", "cls": "t-bad", "note": "单日（Farside，The Coin Republic 11-08）；11-02~06 当周 5 天 4 天流出，合计约 −$12.8 亿，IBIT 占 −$12.1 亿（Coin-Turk / Analytics Insight）"},
+  "fed": {"rate": "3.75–4.00%", "note": "10-28 维持，10–2 两票要加息；CPI 3.7%（9 月），10 月 CPI 11-10 公布；12-09 加息概率 81%（FedWatch，Motley Fool 11-08），11-06 非农超预期后由 67% 升至 77%（24/7 Wall St. 11-07）"},
   "whale": {"value": "+6 万 BTC", "note": "8 月底以来吸筹（CryptoQuant 10-25）"},
 
   "manual_levels": [
@@ -48,7 +48,7 @@
     "没出现「联储暂停 + 周线 >$res_k」前，所有反弹按熊市反弹处理。"
   ],
 
-  "event": {"date": "12·09", "text": "FOMC 议息（附点阵图）。市场偏向加息（概率 69%，RateWatch 10-30）。看点是加不加和点阵图：若放话还要加，走情景 2；若不加或暗示到顶，情景 1 / 3 概率上升。"},
+  "event": {"date": "12·09", "text": "FOMC 议息（附点阵图）。市场偏向加息（FedWatch 81%，11-08；11-10 先看 10 月 CPI）。看点是加不加和点阵图：若放话还要加，走情景 2；若不加或暗示到顶，情景 1 / 3 概率上升。"},
 
   "footer_notes": "<p><b>未核实项：</b>MVRV / 实现价格当前值没拿到可信数字（见 <a href=\"https://studio.glassnode.com/charts/70aa2400-53ee-4cb3-477e-b55793aa210a?a=BTC\">Glassnode</a>）；加息概率为 CME FedWatch 二手引用。</p><p><b>来源：</b>Bybit 行情 / 费率 / OI · alternative.me 恐贪 · <a href=\"https://fortune.com/2026/07/12/bitcoin-bear-market-three-drivers-rebound/\">Fortune 07-12</a> · <a href=\"https://www.analyticsinsight.net/news/bitcoin-price-holds-near-usd-80k-as-traders-await-upcoming-fed-rate-decision\">Analytics Insight 10-25</a>（引 Farside / CryptoQuant）· <a href=\"https://www.kucoin.com/blog/is-2026-btc-crypto-crash-different-will-it-recover\">KuCoin 06-15</a> · 历史周期为训练知识。</p>"
 }
